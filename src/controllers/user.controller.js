@@ -1,7 +1,7 @@
 const User = require("../models/User.models.js");
 const twilio = require("twilio");
 const bcrypt = require("bcrypt")
-const otpStore = {};
+let otpStore = "";
 let user1 = {};
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -34,7 +34,7 @@ const signUpUser = async (req, res) => {
         console.log(`Generated OTP for ${contactNumber}: ${otp}`);
 
         // otp stored for further use in verification
-        otpStore[contactNumber] = otp;
+        otpStore = otp;
         const e_password = await bcrypt.hash(password,10);
 
         // Send OTP via Twilio
@@ -64,16 +64,14 @@ const signUpUser = async (req, res) => {
 
 const verifyOtp = async (req, res) => {
     try {
-        const { contactNumber, otp } = req.body;
+        const { otp } = req.body;
 
-        if (!contactNumber) {
-            return res.status(400).json({ error: "Contact number is required" });
-        }
+        
 
         // otp comparison here
-        if (otp && otp === otpStore[contactNumber]?.toString()) {
+        if (otp && otp === otpStore.toString()) {
            
-            delete otpStore[contactNumber]; // Clear OTP 
+            otpStore = "" // Clear OTP 
             const user2 = await User.create(user1);
             user1 = {};
             return res.status(201).json(user2);
