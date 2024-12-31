@@ -27,12 +27,12 @@ const userSchema = new mongoose.Schema({
     },
     additionalDetails:{
         type:mongoose.Schema.Types.ObjectId,
-        required:true,
+        // required:true,
         ref:"Profile"
     },
     profilePhoto:{
         type:String, //image url
-        required: true
+        // required: true
     },
     
 },
