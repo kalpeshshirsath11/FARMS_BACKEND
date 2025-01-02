@@ -1,12 +1,14 @@
 const User = require("../models/User.models.js");
-const twilio = require("twilio");
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
-let otpStore = "";
+const validatePassword = require("../middlewares/validatePassword.js") 
+const Otp = require("../models/Otp.models.js")
+const validator = require("validator")
+require("dotenv").config()
+// let otpStore = "";
 let user1 = {};
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const client = twilio(accountSid, authToken);
+const client = require("../utils/twilioClient");
+
 
 const signUpUser = async (req, res) => {
     try {
@@ -16,31 +18,43 @@ const signUpUser = async (req, res) => {
             contactNumber,
             accountType,
             password,
-            additionalDetails,
-            profilePhoto,
+            confirmPassword
         } = req.body;
 
-        // Check if required fields are provided
-        if (!contactNumber || !password) {
-            return res.status(400).json({ error: "Contact number and password are required" });
+        if (!firstName || !lastName || !contactNumber || !password || !confirmPassword) {
+            return res.status(400).json({ error: "All fields are required" });
         }
 
-        // Check if the user already exists
+        // contact number validation
+        if (!validator.isMobilePhone(contactNumber, 'any')) {
+            return res.status(400).json({ error: "Invalid contact number" });
+        }
+
+        if (password !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Password and Confirm password do not match",
+            });
+        }
+
         const existedUser = await User.findOne({ contactNumber });
         if (existedUser) {
             return res.status(409).json({ error: "User already exists" });
         }
 
-        const otp = Math.floor(1000 + Math.random() * 9000); // 4-digit OTP
+        const otp = Math.floor(1000 + Math.random() * 9000); // Generate 4-digit OTP
+
+        const hashedOtp = await bcrypt.hash(otp.toString(), 10);
+        await Otp.create({ contactNumber, otp: hashedOtp });
+
+
         console.log(`Generated OTP for ${contactNumber}: ${otp}`);
 
-        // otp stored for further use in verification
-        otpStore = otp;
-        const e_password = await bcrypt.hash(password,10);
+        const pepper = process.env.PEPPER;
+        const e_password = await bcrypt.hash(password + pepper, 10);
 
-        // Send OTP via Twilio
         await client.messages.create({
-            from: "+12316133627", 
+            from: process.env.TWILIO_PHONE_NUMBER,
             to: contactNumber,
             body: `Your OTP is ${otp}`,
         });
@@ -50,82 +64,192 @@ const signUpUser = async (req, res) => {
             lastName,
             contactNumber,
             accountType,
-            password:e_password,
-            // additionalDetails: additionalDetails || "",
-            profilePhoto: profilePhoto || ""
+            password: e_password,
+            profilePhoto: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
         };
 
-        console.log(user1);
-        res.status(200).json({ user: user1 });
-
+        return res.status(200).json({
+            message: "OTP sent successfully",
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(err);
+        res.status(500).json({ error: "Internal Server Error" });
     }
 };
+
+
 
 const verifyOtp = async (req, res) => {
     try {
-        const { otp } = req.body;
+        const { otp, contactNumber } = req.body;
 
-        
-
-        // otp comparison here
-        if (otp && otp === otpStore.toString()) {
-           
-            otpStore = "" // Clear OTP 
-            const user2 = await User.create(user1);
-            user1 = {};
-            return res.status(201).json(user2);
-        } else {
-            return res.status(401).json({ error: "Invalid OTP" });
+        if (!validator.isMobilePhone(contactNumber, "any", { strictMode: true })) {
+            return res.status(400).json({ error: "Invalid contact number format" });
         }
+
+        const storedOtp = await Otp.findOne({ contactNumber });
+        if (!storedOtp || !(await bcrypt.compare(otp.toString(), storedOtp.otp))) {
+            return res.status(401).json({ error: "Invalid or expired OTP" });
+        }        
+
+        await Otp.deleteOne({ _id: storedOtp._id });
+
+        const user2 = await User.create(user1);
+        user1 = {}; 
+
+        return res.status(200).json({
+            success: true,
+            message: "Signed up successfully",
+            user2,
+        });
     } catch (err) {
         console.error("Error in verifyOtp:", err);
-        return res.status(500).json({ error: "Internal Server Error(probably in database )" });
+        return res.status(500).json({ error: "Internal Server Error" });
     }
 };
+
+
 
 const loginUser = async(req,res)=>{
-    const {contactNumber,password} = req.body;
+    try{
 
-    const user = await User.findOne({contactNumber:contactNumber});
-    if(!user){
-        return res.json({err:"user not find during login"})
-    }
-    const flag = await bcrypt.compare(password,user.password); 
-    if(!flag){
-        return res.json({err:"Error occured during login"});
-    }
-    const token = await jwt.sign({
-        _id:user._id,
-        contactNumber:user.contactNumber
+        const {contactNumber,password} = req.body;
 
-    },
-    process.env.TOKEN_SECRET,
-    {
-        expiresIn:process.env.TOKEN_EXPIRY
+        if(!contactNumber || !password){
+            return res.status(400).json({
+                success:false,
+                message:"Please fill all fields"
+            })
+        }
+
+        if (!validator.isMobilePhone(contactNumber, 'any')) {
+            return res.status(400).json({ error: "Invalid contact number" });
+        }
+
+        const user = await User.findOne({contactNumber:contactNumber});
+        if(!user){
+            return res.status(401).json({
+                success:false,
+                message:"User not registered. Please signup first"
+            })
+        }
+        const flag = await bcrypt.compare(password,user.password); 
+        if(!flag){
+            return res.status(401).json({
+                success:false,
+                message:"Incorrect password"
+            })
+        }
+        const token = await jwt.sign({
+            _id:user._id,
+            contactNumber:user.contactNumber,
+            accountType:user.accountType
+            },
+            process.env.TOKEN_SECRET,
+            {
+                expiresIn:process.env.TOKEN_EXPIRY
+            }
+            );
+        if(!token){
+            res.status(500).json({err:"Error in token generation"});
+        }
+
+        // Send the token in an HTTP-only cookie instead of storing in db
+        const options = {
+            expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days
+            httpOnly: true,
+            
+        };
+
+        res.cookie("token", token, options).status(200).json({
+            success: true,
+            token,
+            message: "Logged in successfully",
+        });
+        
+    } catch(error){
+        console.log(error);
+        return res.status(500).json({
+            success:false,
+            message:"Error in logging in"
+        })
     }
-);
-if(!token){
-    res.json({err:"problem in token generation"});
 }
-return res.status(200).cookie("Token",token).json({token:token});
 
-
-}
 
 const logoutUser = (req, res) => {
-    const token = req.cookies.Token; // Corrected syntax to access the cookie
-    if (!token) {
-        return res.status(400).json({ err: "There is no token" }); // Added status code and fixed typo
-    }
-    // Clear the cookie and send response
     return res
         .status(200)
-        .clearCookie("Token") // Clearing the cookie by name
-        .json({ message: "Token deleted" });
+        .clearCookie("token") //Clear cookie from client's browser
+        .json({ message: "Logged out successfully" });
 };
 
 
 
-module.exports = { signUpUser, verifyOtp, loginUser,logoutUser};
+const changePassword = async (req, res) => {
+    try {
+        
+        const { id } = req.user; // Populated by the authenticateToken middleware
+
+        const user = await User.findById(id);  
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found.",
+            });
+        }
+
+        const { oldPassword, newPassword, confirmNewPassword } = req.body;
+
+        if (!oldPassword || !newPassword || !confirmNewPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required.",
+            });
+        }
+
+        const isOldPasswordCorrect = await bcrypt.compare(oldPassword, user.password);
+        if (!isOldPasswordCorrect) {
+            return res.status(400).json({
+                success: false,
+                message: "Incorrect old password.",
+            });
+        }
+
+        if (newPassword !== confirmNewPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "New password and confirm new password do not match.",
+            });
+        }
+
+        const passwordValidationErrors = validatePassword(newPassword);
+        if (passwordValidationErrors.length > 0) {
+            return res.status(400).json({
+                success: false,
+                errors: passwordValidationErrors,
+            });
+        }
+
+        const newHashedPassword = await bcrypt.hash(newPassword, 10);
+
+        user.password = newHashedPassword;
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Password updated successfully.",
+        });
+    } catch (error) {
+        console.error("Error in changing password:", error);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while changing the password.",
+        });
+    }
+};
+
+
+
+module.exports = { signUpUser, verifyOtp, loginUser,logoutUser, changePassword};

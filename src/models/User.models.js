@@ -34,6 +34,13 @@ const userSchema = new mongoose.Schema({
         type:String, //image url
         // required: true
     },
+    //Below two fields will be used for the reset password functionality 
+    token:{
+        type:String
+    },
+    resetPasswordExpires:{
+        type:Date
+    }
     
 },
 {
