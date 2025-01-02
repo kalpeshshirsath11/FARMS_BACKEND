@@ -22,5 +22,6 @@ exports.validatePassword = (password) => {
         }
     }
 
-    return errors;
+    
+
 };

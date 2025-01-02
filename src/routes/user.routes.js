@@ -7,7 +7,7 @@ const {validatePassword} = require("../middlewares/validatePassword.js")
 
 router.post("/signup", otpRateLimiter,validateInput,validatePassword , signUpUser);
 router.post("/verifyOtp",verifyOtp);
-router.post("/login",validateInput,validatePassword, loginUser);
+router.post("/login",validateInput, loginUser);
 router.post("/logOut",logoutUser);
 
 module.exports = router
