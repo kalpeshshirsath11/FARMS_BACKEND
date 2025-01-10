@@ -8,6 +8,7 @@ const otpRateLimiter = rateLimit({
         success: false,
         message: "Too many OTP requests from this IP, please try again after 15 minutes.",
     },
+    
 });
 
 module.exports = { otpRateLimiter };

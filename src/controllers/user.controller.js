@@ -1,13 +1,15 @@
 const User = require("../models/User.models.js");
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
-const validatePassword = require("../middlewares/validatePassword.js") 
+// const validatePassword = require("../middlewares/validatePassword.js") 
 const Otp = require("../models/Otp.models.js")
 const validator = require("validator")
+const {validatePassword} = require("../middlewares/validatePassword.js")
 require("dotenv").config()
 // let otpStore = "";
 let user1 = {};
 const client = require("../utils/twilioClient");
+const { uploadOnCloudinary } = require("../utils/cloudinary.js");
 
 
 const signUpUser = async (req, res) => {
@@ -20,8 +22,10 @@ const signUpUser = async (req, res) => {
             password,
             confirmPassword
         } = req.body;
+        const profile = req.file.path;
+        const photo = await uploadOnCloudinary(profile);
 
-        if (!firstName || !lastName || !contactNumber || !password || !confirmPassword) {
+        if (!firstName || !lastName || !contactNumber || !password ) {
             return res.status(400).json({ error: "All fields are required" });
         }
 
@@ -29,13 +33,19 @@ const signUpUser = async (req, res) => {
         if (!validator.isMobilePhone(contactNumber, 'any')) {
             return res.status(400).json({ error: "Invalid contact number" });
         }
+        const passcode_valid = validatePassword(password);
+        if (passcode_valid.length > 0) { // Check if there are any validation errors
+            return res.status(402).json({
+            err: passcode_valid
+        });
+}
 
-        if (password !== confirmPassword) {
-            return res.status(400).json({
-                success: false,
-                message: "Password and Confirm password do not match",
-            });
-        }
+        // if (password !== confirmPassword) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: "Password and Confirm password do not match",
+        //     });
+        // }
 
         const existedUser = await User.findOne({ contactNumber });
         if (existedUser) {
@@ -65,7 +75,7 @@ const signUpUser = async (req, res) => {
             contactNumber,
             accountType,
             password: e_password,
-            profilePhoto: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
+            profilePhoto: photo?.url ||`https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
         };
 
         return res.status(200).json({
