@@ -1,6 +1,6 @@
 const mongoose = require("mongoose")
 
-const farmerSchema = new mongoose.Schema({
+const retailerRequirementSchema = new mongoose.Schema({
     userId:{
         type:mongoose.Schema.Types.ObjectId,
         ref:"User",
@@ -20,15 +20,9 @@ const farmerSchema = new mongoose.Schema({
         type:Number,
         required:true,
     },
-    image: {
-        type: String,
-        required: true,
-        validate: {
-            validator: function (v) {
-                return /^(http|https):\/\/[^ "]+$/.test(v); // Validate as a URL
-            },
-            message: props => `${props.value} is not a valid URL!`
-        }
+    pricePerKg:{
+        type:Number,
+        required:true
     },
     location: {
         type: {
@@ -47,4 +41,4 @@ const farmerSchema = new mongoose.Schema({
 }
 )
 
-module.exports = mongoose.model("Farmer", farmerSchema);
+module.exports = mongoose.model("Retailer", retailerRequirementSchema);

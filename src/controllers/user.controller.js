@@ -1,15 +1,15 @@
-const User = require("../models/User.models.js");
+const User = require("../models/User.js");
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
 // const validatePassword = require("../middlewares/validatePassword.js") 
-const Otp = require("../models/Otp.models.js")
+const Otp = require("../models/Otp.js")
 const validator = require("validator")
 const {validatePassword} = require("../middlewares/validatePassword.js")
 require("dotenv").config()
 // let otpStore = "";
 let user1 = {};
 const client = require("../utils/twilioClient");
-const { uploadOnCloudinary } = require("../utils/cloudinary.js");
+const { uploadOnCloudinary } = require("../config/cloudinary.js");
 
 
 const signUpUser = async (req, res) => {
@@ -19,8 +19,7 @@ const signUpUser = async (req, res) => {
             lastName,
             contactNumber,
             accountType,
-            password,
-            confirmPassword
+            password
         } = req.body;
         const profile = req.file.path;
         const photo = await uploadOnCloudinary(profile);
@@ -83,7 +82,7 @@ const signUpUser = async (req, res) => {
         });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: "Internal Server Error" });
+        res.status(500).json({ error: "Internal Server Error during signup" });
     }
 };
 

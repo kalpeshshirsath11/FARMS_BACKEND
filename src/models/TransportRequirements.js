@@ -1,6 +1,6 @@
 const mongoose = require("mongoose")
 
-const transporterSchema = new mongoose.Schema({
+const transportRequirementSchema = new mongoose.Schema({
     userId:{
         type:mongoose.Schema.Types.ObjectId,
         ref:"User",
@@ -43,4 +43,4 @@ const transporterSchema = new mongoose.Schema({
 }
 )
 
-module.exports = mongoose.model("Transporter", transporterSchema);
+module.exports = mongoose.model("Transporter", transportRequirementSchema);

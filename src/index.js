@@ -1,6 +1,7 @@
 const express = require("express");
 require("dotenv").config();
-const { dbConnection } = require("./db.js"); 
+const {dbConnection} = require("./config/database.js")
+const {cloudinaryConnect} = require("./config/cloudinary.js")
 const userRoute = require("./routes/user.routes.js");
 const cookieParser = require("cookie-parser");
 const PORT = process.env.PORT || 8000;
@@ -13,6 +14,7 @@ app.use(cookieParser())
 
 
 
+cloudinaryConnect();
 
 dbConnection()
   .then(() => {

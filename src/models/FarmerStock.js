@@ -1,6 +1,6 @@
 const mongoose = require("mongoose")
 
-const retailerSchema = new mongoose.Schema({
+const farmerStockSchema = new mongoose.Schema({
     userId:{
         type:mongoose.Schema.Types.ObjectId,
         ref:"User",
@@ -20,9 +20,9 @@ const retailerSchema = new mongoose.Schema({
         type:Number,
         required:true,
     },
-    pricePerKg:{
-        type:Number,
-        required:true
+    image: {
+        type: String,
+        required: true,
     },
     location: {
         type: {
@@ -41,4 +41,4 @@ const retailerSchema = new mongoose.Schema({
 }
 )
 
-module.exports = mongoose.model("Retailer", retailerSchema);
+module.exports = mongoose.model("Farmer", farmerStockSchema);
