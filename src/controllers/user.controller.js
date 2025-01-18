@@ -1,7 +1,6 @@
 const User = require("../models/User.js");
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
-// const validatePassword = require("../middlewares/validatePassword.js") 
 const Otp = require("../models/Otp.js")
 const validator = require("validator")
 const {validatePassword} = require("../middlewares/validatePassword.js")
@@ -9,8 +8,7 @@ require("dotenv").config()
 // let otpStore = "";
 let user1 = {};
 const client = require("../utils/twilioClient");
-const { uploadOnCloudinary } = require("../config/cloudinary.js");
-
+const {  uploadOnCloudinary } = require("../utils/uploadToCloudinary.js");
 
 const signUpUser = async (req, res) => {
     try {
@@ -104,7 +102,8 @@ const verifyOtp = async (req, res) => {
         await Otp.deleteOne({ _id: storedOtp._id });
 
         const user2 = await User.create(user1);
-        user1 = {}; 
+        user1 = {};
+
 
         return res.status(200).json({
             success: true,

@@ -7,14 +7,16 @@ const cookieParser = require("cookie-parser");
 const PORT = process.env.PORT || 8000;
 const app = express();
 
-// Middleware
+// Middlewareeeeee
+
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+
 app.use(cookieParser())
 
 
 
-cloudinaryConnect();
+app.use("/api",userRoute);
 
 dbConnection()
   .then(() => {
@@ -25,4 +27,3 @@ dbConnection()
   .catch((err) => {
     console.log("Error occurred in server starting process:", err);
   });
-app.use("/api",userRoute);
