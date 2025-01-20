@@ -29,15 +29,15 @@ exports.validateInput = (req, res, next) => {
     }
 
     // Validate contact number if provided
-    if (contactNumber !== undefined) {
-        const sanitizedContactNumber = contactNumber.trim();
-        if (!contactRegex.test(sanitizedContactNumber)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid contact number. It must only contain 10 to 15 digits.",
-            });
-        }
-    }
+    // if (contactNumber !== undefined) {
+    //     const sanitizedContactNumber = contactNumber.trim();
+    //     if (!contactRegex.test(sanitizedContactNumber)) {
+    //         return res.status(400).json({
+    //             success: false,
+    //             message: "Invalid contact number. It must only contain 10 to 15 digits.",
+    //         });
+    //     }
+    // }
 
     // Validate email if provided
     if (email !== undefined) {

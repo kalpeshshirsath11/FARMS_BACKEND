@@ -40,6 +40,14 @@ const userSchema = new mongoose.Schema({
     },
     resetPasswordExpires:{
         type:Date
+    },
+    averageRating:{
+        type:Number,
+        default:0
+    },
+    reviewCount:{
+        type:Number,
+        default:0
     }
     
 },

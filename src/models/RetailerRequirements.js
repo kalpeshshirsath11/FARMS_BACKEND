@@ -20,7 +20,7 @@ const retailerRequirementSchema = new mongoose.Schema({
         type:Number,
         required:true,
     },
-    pricePerKg:{
+    pricePerQuintal:{
         type:Number,
         required:true
     },
