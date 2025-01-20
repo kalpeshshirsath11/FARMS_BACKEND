@@ -20,8 +20,10 @@ const signUpUser = async (req, res) => {
             accountType,
             password
         } = req.body;
-        const profile = req.file.path;
-        const photo = await uploadOnCloudinary(profile);
+        // const profile = req.file.path;
+        // const photo = await uploadOnCloudinary(profile);
+
+        // console.log(firstName, lastName, accountType, password, contactNumber);
 
         if (!firstName || !lastName || !contactNumber || !password ) {
             return res.status(400).json({ error: "All fields are required" });
@@ -73,7 +75,7 @@ const signUpUser = async (req, res) => {
             contactNumber,
             accountType,
             password: e_password,
-            profilePhoto: photo?.url ||`https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
+            profilePhoto: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
         };
 
         return res.status(200).json({
@@ -95,7 +97,9 @@ const verifyOtp = async (req, res) => {
             return res.status(400).json({ error: "Invalid contact number format" });
         }
 
-        const storedOtp = await Otp.findOne({ contactNumber });
+        const storedOtp = await Otp.findOne({ contactNumber })
+                                   .sort({ createdAt: -1 })  // Sort in descending order of creation time
+                                   .limit(1);  // To ensure we get only the most recent one
         if (!storedOtp || !(await bcrypt.compare(otp.toString(), storedOtp.otp))) {
             return res.status(401).json({ error: "Invalid or expired OTP" });
         }        

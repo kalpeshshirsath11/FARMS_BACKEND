@@ -83,6 +83,35 @@ exports.postStock = async (req, res) => {
    }
 };
 
+
+exports.viewMyStock = async (req, res) => {
+    try {
+        const farmerDetails = req.user;
+        const farmerId = farmerDetails._id;
+
+        const myStock = await FarmerStock.find({ userId: farmerId }).sort({createdAt: -1});  //newest first
+
+        if (!myStock || myStock.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No stocks posted yet.",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Farmer stocks fetched successfully.",
+            stocks: myStock, 
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Error in fetching stocks posted by farmer.",
+        });
+    }
+};
+
 exports.requestTransport = async(req,res)=>{
     //middlewares will check for is farmer uploading or authenticated
     //then farmer will provide information of crop
