@@ -6,6 +6,9 @@ const userRoute = require("./routes/user.routes.js");
 const cookieParser = require("cookie-parser");
 const PORT = process.env.PORT || 8000;
 const app = express();
+const farmRoute = require('./routes/farmer.routes.js')
+const retailerRoute = require('./routes/retailer.routes.js')
+const transportRoute = require('./routes/transporter.routes.js')
 
 // Middlewareeeeee
 
@@ -17,6 +20,9 @@ app.use(cookieParser())
 
 
 app.use("/api",userRoute);
+app.use('/farmer',farmRoute)
+app.use('/retailer',retailerRoute)
+app.use('/transporter',transportRoute)
 
 dbConnection()
   .then(() => {

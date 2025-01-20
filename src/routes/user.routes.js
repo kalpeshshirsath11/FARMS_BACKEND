@@ -14,6 +14,6 @@ router.post("/signup",otpRateLimiter,validateInput,upload.single("profilePhoto")
 router.post("/verifyOtp",verifyOtp);
 router.post("/login",validateInput, loginUser);
 router.post("/logOut",logoutUser);
-router.post("/farmer/poststock", authorize, isFarmer,postStock)
+
 
 module.exports = router;

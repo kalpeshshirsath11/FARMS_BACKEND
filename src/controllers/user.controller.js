@@ -10,6 +10,7 @@ let user1 = {};
 const client = require("../utils/twilioClient");
 const {  uploadOnCloudinary } = require("../utils/uploadToCloudinary.js");
 
+
 const signUpUser = async (req, res) => {
     try {
         const {
@@ -33,7 +34,7 @@ const signUpUser = async (req, res) => {
         const passcode_valid = validatePassword(password);
         if (passcode_valid.length > 0) { // Check if there are any validation errors
             return res.status(402).json({
-            err: passcode_valid
+            err: passcode_validq
         });
 }
 
@@ -42,7 +43,7 @@ const signUpUser = async (req, res) => {
         //         success: false,
         //         message: "Password and Confirm password do not match",
         //     });
-        // }
+        // } 
 
         const existedUser = await User.findOne({ contactNumber });
         if (existedUser) {
@@ -57,8 +58,8 @@ const signUpUser = async (req, res) => {
 
         console.log(`Generated OTP for ${contactNumber}: ${otp}`);
 
-        const pepper = process.env.PEPPER;
-        const e_password = await bcrypt.hash(password + pepper, 10);
+        
+        const e_password = await bcrypt.hash(password,10);
 
         await client.messages.create({
             from: process.env.TWILIO_PHONE_NUMBER,
@@ -117,7 +118,6 @@ const verifyOtp = async (req, res) => {
 };
 
 
-
 const loginUser = async(req,res)=>{
     try{
 
@@ -163,13 +163,9 @@ const loginUser = async(req,res)=>{
         }
 
         // Send the token in an HTTP-only cookie instead of storing in db
-        const options = {
-            expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days
-            httpOnly: true,
-            
-        };
+        
 
-        res.cookie("token", token, options).status(200).json({
+        res.cookie("token", token).status(200).json({
             success: true,
             token,
             message: "Logged in successfully",
@@ -183,7 +179,6 @@ const loginUser = async(req,res)=>{
         })
     }
 }
-
 
 const logoutUser = (req, res) => {
     return res
