@@ -13,7 +13,7 @@ const RatingReviewSchema = new mongoose.Schema({
   },
   role:{  //role of reviewee
     type:String,
-    enum:['farmer', 'retailer'],
+    enum:['farmer', 'retailer', 'transporter'],
     required:true
   },
   rating:{

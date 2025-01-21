@@ -1,10 +1,11 @@
 const Review = require('../models/RatingReview')
 const User = require('../models/User')
+const mongoose = require('mongoose')
 
 exports.createReview = async(req, res) => {
     try{
-        const {revieweeId, role, rating, comment} = req.body;  //role means role of reviewee (farmer or retailer)
-        const reviewerId = req.user.id;
+        const {revieweeId, role, rating, comment} = req.body;  //role means role of reviewee (farmer or retailer pr transporter)
+        const reviewerId = req.user._id;
 
         if (!revieweeId || !role || !rating) {
             return res.status(400).json({
@@ -13,13 +14,13 @@ exports.createReview = async(req, res) => {
             });
         }
 
-        if (!['farmer', 'retailer'].includes(role)) {
-            return res.status(400).json({
-              success: false,
-              message: "Reviewee role must be either 'farmer' or 'retailer'.",
-            });
-          }
-
+        if (!['farmer', 'retailer', 'transporter'].includes(role.toLowerCase())) {
+          return res.status(400).json({
+            success: false,
+            message: "Reviewee role must be either 'farmer', 'retailer', or 'transporter'.",
+          });
+        }
+        
         // Mongoose will handle the validation at the database level. But for better UX 
         if (comment && comment.length > 300) {
             return res.status(400).json({ message: 'Comment cannot exceed 300 characters.' });
@@ -33,14 +34,17 @@ exports.createReview = async(req, res) => {
             })
         }
 
+
         //create review
         const newReview = await Review.create({
             reviewee: revieweeId,
             reviewer: reviewerId,
-            role,
+            role: role.toLowerCase(),
             rating,
             comment,
           });
+
+          console.log(newReview);
 
         //update reviewee model
         const reviewee = await User.findById(revieweeId);
@@ -66,13 +70,14 @@ exports.createReview = async(req, res) => {
 
 //fetch reviews for a farmer/retailer
 exports.getReviews = async (req, res) => {
-    try {
-      const { revieweeId } = req.params;
-      const reviews = await Review.find({ reviewee: revieweeId }).populate('reviewer', 'name');
-      res.status(200).json({ reviews });
-    } catch (error) {
-      res.status(500).json({ message: 'Error in fetching reviews', error });
-    }
+  try {
+    const { revieweeId } = req.query;  // Use req.query to get URL parameters
+
+    const reviews = await Review.find({ reviewee: revieweeId }).populate('reviewer', 'firstName lastName');
+    res.status(200).json({ message: "All reviews fetched", reviews });
+  } catch (error) {
+    res.status(500).json({ message: 'Error in fetching reviews', error });
+  }
 };
 
 
@@ -80,7 +85,7 @@ exports.updateRating = async (req, res) => {
     try {
       const { revieweeId, newrating } = req.body;
   
-      const reviewerId = req.user.id;
+      const reviewerId = req.user._id;
   
       if (!revieweeId || !newrating) {
         return res.status(400).json({
@@ -143,7 +148,7 @@ exports.editComment = async(req, res) => {
         const {revieweeId, newcomment} = req.body;
 
         //fetch reviewer id
-        const reviewerId = req.user.id;
+        const reviewerId = req.user._id;
 
         //validations
         if (!revieweeId || !newcomment) {
@@ -198,7 +203,7 @@ exports.deleteReview = async(req, res) => {
 
     try{
         const {revieweeId} = req.body;
-        const reviewerId = req.user.id;
+        const reviewerId = req.user._id;
 
         const review = await Review.findOne({
             reviewee:revieweeId,

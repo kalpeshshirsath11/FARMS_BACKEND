@@ -9,6 +9,8 @@ const app = express();
 const farmRoute = require('./routes/farmer.routes.js')
 const retailerRoute = require('./routes/retailer.routes.js')
 const transportRoute = require('./routes/transporter.routes.js')
+const {authorize, isFarmer, isRetailer, isTransporter} = require("./middlewares/auth.js")
+
 
 // Middlewareeeeee
 
@@ -19,10 +21,11 @@ app.use(cookieParser())
 
 
 
-app.use("/api",userRoute);
-app.use('/farmer',farmRoute)
-app.use('/retailer',retailerRoute)
-app.use('/transporter',transportRoute)
+app.use("/api",userRoute);  //public routes
+app.use('/farmer',authorize, isFarmer, farmRoute)
+app.use('/retailer',authorize ,isRetailer, retailerRoute)
+app.use('/transporter',authorize, isTransporter,transportRoute)
+
 
 dbConnection()
   .then(() => {

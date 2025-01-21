@@ -1,7 +1,15 @@
 const {getStock} = require('../controllers/retailer.controller.js')
 const express = require("express")
-const Router = express.Router();
+const router = express.Router();
 const {authorize,isRetailer} = require('../middlewares/auth.js')
-Router.get('/getstock',authorize,isRetailer,getStock);
+const {createReview, getReviews, updateRating, editComment, deleteReview} = require('../controllers/RatingReviewOperations.js')
 
-module.exports = Router
+
+router.get('/getstock',getStock);
+router.post('/createreview',  createReview);
+router.post('/updaterating',  updateRating);
+router.post('/editcomment',  editComment);
+router.post('/deletereview', deleteReview);
+router.get('/getreviews', getReviews);
+
+module.exports = router

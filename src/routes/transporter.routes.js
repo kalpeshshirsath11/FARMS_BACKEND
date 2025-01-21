@@ -1,8 +1,12 @@
 // const {getStock} = require('../controllers/retailer.controller.js')
 const express = require("express")
-const Router = express.Router();
+const router = express.Router();
 const {getRequest} = require("../controllers/transporter.controller.js")
+const {getReviews} = require('../controllers/RatingReviewOperations.js')
 
-Router.get('/getinfo',getRequest);
-module.exports = Router
+
+router.get('/getinfo',getRequest);
+router.get('/getreviews', getReviews);
+
+module.exports = router
 

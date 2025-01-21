@@ -5,9 +5,7 @@ const router = express.Router();
 const {signUpUser,verifyOtp,loginUser,logoutUser} = require("../controllers/user.controller.js")
 const { otpRateLimiter } = require("../middlewares/rateLimiter");
 const {validateInput} = require("../middlewares/validateInput.js")
-const {validatePassword} = require("../middlewares/validatePassword.js")
 const {postStock} = require("../controllers/PostStock.controller.js")
-const {authorize, isFarmer} = require("../middlewares/auth.js")
 
 
 // router.post("/signup", otpRateLimiter,validateInput,validatePassword,upload.single("profile") , signUpUser);
