@@ -1,13 +1,17 @@
 const { ItemAssignmentContextImpl } = require("twilio/lib/rest/numbers/v2/regulatoryCompliance/bundle/itemAssignment");
-const { upload } = require("../middlewares/multer.middleware");
-const FarmerStock = require("../models/FarmerStock");
-const { uploadOnCloudinary } = require("../utils/uploadToCloudinary");
+const { upload } = require("../middlewares/multer.middleware.js");
+const FarmerStock = require("../models/FarmerStock.js");
+const { uploadOnCloudinary } = require("../utils/uploadToCloudinary.js");
 const TransporterDemand = require('../models/TransportRequirements.js')
+const retailerDemands = require("../models/RetailerRequirements.js")
+const {getCoordinates} = require("../services/geocodingService.js")
+const {calculateByRoadDistance} = require("../services/distanceCalculator.js")
+
 require("dotenv").config();
 
 exports.postStock = async (req, res) => {
    try{
-    const {cropname, cropgrade, quantity, location} = req.body;
+    const {cropname, cropgrade, quantity, location} = req.body;  //location should be comma separated village,taluka,district
    
     const farmerDetails = req.user;
 
@@ -26,39 +30,27 @@ exports.postStock = async (req, res) => {
         });
     }
 
-    // Location validations
-    // if (!location || location.type !== "Point") {
-    //     return res.status(400).json({
-    //         success: false,
-    //         message: "Location type must be 'Point'.",
-    //     });
-    // }
-
-    // const [longitude, latitude] = location.coordinates || [];
-    // if (
-    //     !Array.isArray(location.coordinates) ||
-    //     location.coordinates.length !== 2 ||
-    //     typeof longitude !== "number" ||
-    //     typeof latitude !== "number" ||
-    //     longitude < -180 || longitude > 180 ||
-    //     latitude < -90 || latitude > 90
-    // ) {
-    //     return res.status(400).json({
-    //         success: false,
-    //         message: "Invalid coordinates. Ensure [longitude, latitude] are within valid ranges.",
-    //     });
-    // }
     const image = req.file.path;
     if(!image){
         return res.json({errr:"Image is required"})
     }
+
     const uploadedImage = await uploadOnCloudinary(image);
     if (!uploadedImage || !uploadedImage.secure_url) {
         return res.status(500).json({
             success: false,
-            message: "Failed to upload image to Cloudinary",
+            message: "Failed to upload crop image to Cloudinary",
         });
     }
+
+    const locationcoordinates = await getCoordinates(location);
+    if (!locationcoordinates || locationcoordinates.length !== 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid location. Unable to retrieve coordinates.",
+      });
+    }
+    console.log(locationcoordinates);
 
     const newStock = await FarmerStock.create({
         userId: farmerDetails._id,
@@ -66,7 +58,11 @@ exports.postStock = async (req, res) => {
         cropGrade: cropgrade,
         quantity: quantity,
         image: uploadedImage.secure_url,
-        // location: location,
+        location: {
+            type:"Point",
+            address:location,
+            coordinates:locationcoordinates
+        }
     });
 
     return res.status(200).json({
@@ -111,6 +107,73 @@ exports.viewMyStock = async (req, res) => {
         });
     }
 };
+
+
+//MASTER STROKE !
+exports.viewBestDeals = async(req, res) => {
+    try{
+        const {crop, cropgrade, quantity, location} = req.body;  //quantity is qty of stock posted by farmer, location is a string
+
+        if(!crop || !cropgrade || !quantity || !location){
+            return res.status(400).json({
+                success:false,
+                message:"To view best deals, crop, cropgrade, quantity, location are required fields"
+            })
+        }
+
+        const matchedDemands = await retailerDemands.find({crop:crop, cropGrade:cropgrade});
+        if(matchedDemands.length === 0){
+            return res.status(404).json({
+                success:false,
+                message:"No matches found for the uploaded crop. Please try again later."
+            })
+        }
+
+        const k1 = 0.7, k2 = 0.15, k3 = 0.15;
+
+        const demandsWithScores = await Promise.all(
+            matchedDemands.map(async (demand) => {
+                const populatedDemand = await demand.populate('userId', 'averageRating');
+               
+
+                const priceOffered = populatedDemand.pricePerQuintal;
+                const retailerRating = populatedDemand.userId.averageRating;
+                const retailerLocation = populatedDemand.location.address;
+                
+
+                const distance = await calculateByRoadDistance(retailerLocation, location);
+                
+                //temporary - 7rs per km
+                const profitMargin = (priceOffered * quantity) - (distance * 7);
+
+                const dealScore = parseFloat(
+                    (k1 * profitMargin - k2 * distance + k3 * retailerRating).toFixed(2)
+                );
+
+
+                //Return an object for every demand. Array of objects will be created.
+                return { demand: populatedDemand, dealScore };
+            })
+        );
+        
+        demandsWithScores.sort((a,b) => {
+            return b.dealScore - a.dealScore;
+        })
+
+        return res.status(200).json({
+            success:true,
+            message:"Checkout the MOST PROFITABLE DEALS for your crop !",
+            demandsWithScores
+        })
+    } catch(error){
+        console.error(error);
+        return res.status(500).json({
+            success:false,
+            message:"Error in finding the best deals."
+        })
+    }
+}
+
 
 exports.requestTransport = async(req,res)=>{
     //middlewares will check for is farmer uploading or authenticated

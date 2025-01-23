@@ -24,12 +24,13 @@ async function getByRoadDistance(coord1, coord2) {
       }
     );
 
+
     const distance = response.data.routes[0].summary.distance / 1000; // Distance in kilometers
-    // console.log(distance);
+    
     return distance;
   } catch (error) {
     console.error('Error fetching by-road distance:', error.message);
-    throw error;
+    throw new error;
   }
 }
 
