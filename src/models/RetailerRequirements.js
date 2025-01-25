@@ -13,7 +13,7 @@ const retailerRequirementSchema = new mongoose.Schema({
     },
     cropGrade:{
         type:Number,
-        enum:[1,2,3,4],
+        enum:[1,2,3,4,5],
         required:true
     },
     quantity:{
@@ -34,11 +34,18 @@ const retailerRequirementSchema = new mongoose.Schema({
           type: [Number], // [longitude, latitude]
           required: true,
         },
+        address:{  //address as a string
+            type: String,
+            required:true
+        }
     },
 },
 {
     timestamps: true, //This automatically adds createdAt and updatedAt fields to your schema and updates the updatedAt field whenever the document is modified.
 }
 )
+
+retailerRequirementSchema.index({crop:1, cropGrade:1});  //index crop and cropGrade in ascending order
+retailerRequirementSchema.index({ location: "2dsphere" });
 
 module.exports = mongoose.model("Retailer", retailerRequirementSchema);

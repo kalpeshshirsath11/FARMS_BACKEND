@@ -1,4 +1,4 @@
-const TransporterDemand = require('../models/TransportRequirements.model.js')
+const TransporterDemand = require('../models/TransportRequirements.js')
 const {getCoordinates} = require('../services/geocodingService.js')
 const FarmerStock = require("../models/FarmerStock");
 const mongoose = require('mongoose');

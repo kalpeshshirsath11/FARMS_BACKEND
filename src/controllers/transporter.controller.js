@@ -1,7 +1,7 @@
 const  FarmerStock = require("../models/FarmerStock.js")
 const mongoose = require('mongoose');
 const requstStatus = require('../models/RequestStatus.model.js');
-const Transporter = require("../models/TransportRequirements.model.js");
+const Transporter = require("../models/TransportRequirements.js");
 const client = require("../utils/twilioClient.js");
 const User = require("../models/User.js")
 

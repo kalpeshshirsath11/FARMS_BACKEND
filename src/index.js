@@ -12,8 +12,6 @@ const transportRoute = require('./routes/transporter.routes.js')
 const {authorize, isFarmer, isRetailer, isTransporter} = require("./middlewares/auth.js")
 
 
-// Middlewareeeeee
-
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 

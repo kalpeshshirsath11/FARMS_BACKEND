@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const User = require('./User.js');
-const TransporterDemand = require('./TransportRequirements.model.js');
+const TransporterDemand = require('./TransportRequirements.js');
 const notificationSchema = new mongoose.Schema({
     _senderId:{
         type:mongoose.Schema.Types.ObjectId,

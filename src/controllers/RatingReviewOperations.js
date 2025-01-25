@@ -4,7 +4,8 @@ const mongoose = require('mongoose')
 
 exports.createReview = async(req, res) => {
     try{
-        const {revieweeId, role, rating, comment} = req.body;  //role means role of reviewee (farmer or retailer pr transporter)
+        const {revieweeId, role, comment} = req.body;  //role means role of reviewee (farmer or retailer or transporter)
+        const rating = parseFloat(req.body.rating);
         const reviewerId = req.user._id;
 
         if (!revieweeId || !role || !rating) {
@@ -42,7 +43,7 @@ exports.createReview = async(req, res) => {
             role: role.toLowerCase(),
             rating,
             comment,
-          });
+        });
 
           console.log(newReview);
 
