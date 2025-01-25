@@ -9,7 +9,7 @@ const {postStock} = require("../controllers/PostStock.controller.js")
 
 
 // router.post("/signup", otpRateLimiter,validateInput,validatePassword,upload.single("profile") , signUpUser);
-router.post("/signup",otpRateLimiter,validateInput, signUpUser);
+router.post("/signup",otpRateLimiter,validateInput,upload.single("profilePhoto"), signUpUser);
 router.post("/verifyOtp",verifyOtp);
 router.post("/login",validateInput, loginUser);
 router.post("/logOut",logoutUser);

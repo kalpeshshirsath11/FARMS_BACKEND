@@ -2,6 +2,7 @@ const express = require("express")
 const {upload} = require("../middlewares/multer.middleware.js")
 const router = express.Router();
 const {postStock} = require('../controllers/PostStock.controller.js')
+const {requestTransport,tranportReqfarmer,reqFarmer} = require('../controllers/FarmerTransport.controller.js')
 // const {postStock} = require('../controllers/PostStock.controller.js')
 // const { upload }= require('../middlewares/multer.middleware.js')
 const {authorize,isFarmer} = require('../middlewares/auth.js')
@@ -9,7 +10,9 @@ const {createReview, getReviews, updateRating, editComment, deleteReview} = requ
 
 
 router.post('/poststock',upload.single("cropImage"),postStock);
-// router.post('/reqtransporter',)
+router.post('/reqtransporter',requestTransport);
+router.get('/farmerRequest',tranportReqfarmer);
+router.post('/sendrequest',reqFarmer);
 router.post('/createreview', createReview);
 router.post('/updaterating', updateRating);
 router.post('/editcomment',  editComment);

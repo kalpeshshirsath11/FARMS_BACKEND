@@ -20,8 +20,8 @@ const signUpUser = async (req, res) => {
             accountType,
             password
         } = req.body;
-        // const profile = req.file.path;
-        // const photo = await uploadOnCloudinary(profile);
+        const profile = req.file.path;
+        const photo = await uploadOnCloudinary(profile);
 
         // console.log(firstName, lastName, accountType, password, contactNumber);
 
@@ -36,7 +36,7 @@ const signUpUser = async (req, res) => {
         const passcode_valid = validatePassword(password);
         if (passcode_valid.length > 0) { // Check if there are any validation errors
             return res.status(402).json({
-            err: passcode_validq
+            err: passcode_valid
         });
 }
 
@@ -75,7 +75,7 @@ const signUpUser = async (req, res) => {
             contactNumber,
             accountType,
             password: e_password,
-            profilePhoto: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
+            profilePhoto: photo?.url||`https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
         };
 
         return res.status(200).json({

@@ -1,8 +1,9 @@
-const { ItemAssignmentContextImpl } = require("twilio/lib/rest/numbers/v2/regulatoryCompliance/bundle/itemAssignment");
+// const { ItemAssignmentContextImpl } = require("twilio/lib/rest/numbers/v2/regulatoryCompliance/bundle/itemAssignment");
 const { upload } = require("../middlewares/multer.middleware");
 const FarmerStock = require("../models/FarmerStock");
 const { uploadOnCloudinary } = require("../utils/uploadToCloudinary");
-const TransporterDemand = require('../models/TransportRequirements.js')
+const TransporterDemand = require('../models/TransportRequirements.model.js')
+const {getCoordinates} = require('../services/geocodingService.js')
 require("dotenv").config();
 
 exports.postStock = async (req, res) => {
@@ -26,28 +27,30 @@ exports.postStock = async (req, res) => {
         });
     }
 
-    // Location validations
-    // if (!location || location.type !== "Point") {
-    //     return res.status(400).json({
-    //         success: false,
-    //         message: "Location type must be 'Point'.",
-    //     });
-    // }
+    //Location validations
+    
+    
+    if (!location || location.type !== "Point") {
+        return res.status(400).json({
+            success: false,
+            message: "Location type must be 'Point'.",
+        });
+    }
 
-    // const [longitude, latitude] = location.coordinates || [];
-    // if (
-    //     !Array.isArray(location.coordinates) ||
-    //     location.coordinates.length !== 2 ||
-    //     typeof longitude !== "number" ||
-    //     typeof latitude !== "number" ||
-    //     longitude < -180 || longitude > 180 ||
-    //     latitude < -90 || latitude > 90
-    // ) {
-    //     return res.status(400).json({
-    //         success: false,
-    //         message: "Invalid coordinates. Ensure [longitude, latitude] are within valid ranges.",
-    //     });
-    // }
+    const [longitude, latitude] = location.coordinates || [];
+    if (
+        !Array.isArray(location.coordinates) ||
+        location.coordinates.length !== 2 ||
+        typeof longitude !== "number" ||
+        typeof latitude !== "number" ||
+        longitude < -180 || longitude > 180 ||
+        latitude < -90 || latitude > 90
+    ) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid coordinates. Ensure [longitude, latitude] are within valid ranges.",
+        });
+    }
     const image = req.file.path;
     if(!image){
         return res.json({errr:"Image is required"})
@@ -111,44 +114,3 @@ exports.viewMyStock = async (req, res) => {
         });
     }
 };
-
-exports.requestTransport = async(req,res)=>{
-    //middlewares will check for is farmer uploading or authenticated
-    //then farmer will provide information of crop
-    //validate user information then upload it to database
-    const {departLocation,deliveryLocation,dateOfJourney,capacity} = req.body;
-    if(!departLocation || !deliveryLocation || !dateOfJourney || !capacity){
-        return res.status(402).json({
-            success: false,
-            message: "please provide all Information ",
-
-        })
-    }
-    const farmerDetails = req.user;
-    if(!farmerDetails){
-        return res.status(402).json({
-            message:"farmer doesnt exist",
-            success:"false",
-        })
-    }
-    const FarmRequest = await TransporterDemand.create({
-        departLocation,
-        deliveryLocation,
-        dateOfJourney,
-        capacity,
-        userId:farmerDetails._id
-    })
-
-    if(!FarmRequest){
-        return res.status(402).json({
-            success:false,
-            message:"Error in uploading to database",
-        })
-    }
-    return res.status(201).json({
-        requestTransport:FarmRequest,
-        success:true,
-        message:"requestes successfully"
-    })
-
-}

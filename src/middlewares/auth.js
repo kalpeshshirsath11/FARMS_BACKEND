@@ -76,7 +76,7 @@ exports.isRetailer = (req, res, next) => {
 
 exports.isTransporter = (req, res, next) => {
     try{
-        if(req.user.accountType !== "Transporter "){
+        if(req.user.accountType !== "Transporter"){
             return res.status(401).json({
                 success:false,
                 message:"This is a protected route for Transporter  ONLY !"
