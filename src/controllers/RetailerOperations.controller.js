@@ -29,7 +29,10 @@ exports.postRequirement = async (req, res) => {
           }
 
         const locationcoordinates = await getCoordinates(location);
-        if (!locationcoordinates || locationcoordinates.length !== 2) {
+        const longi = locationcoordinates.lon;
+        const lati = locationcoordinates.lat;
+        // console.log(locationcoordinates);
+        if (!locationcoordinates) {
         return res.status(400).json({
             success: false,
             message: "Invalid location. Unable to retrieve coordinates.",
@@ -45,7 +48,7 @@ exports.postRequirement = async (req, res) => {
             location:{
                 type:"Point",
                 address:location,
-                coordinates:locationcoordinates
+                coordinates:[longi, lati]
             }
         });
 

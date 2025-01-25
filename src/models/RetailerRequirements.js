@@ -45,4 +45,7 @@ const retailerRequirementSchema = new mongoose.Schema({
 }
 )
 
+retailerRequirementSchema.index({crop:1, cropGrade:1});  //index crop and cropGrade in ascending order
+retailerRequirementSchema.index({ location: "2dsphere" });
+
 module.exports = mongoose.model("Retailer", retailerRequirementSchema);

@@ -5,7 +5,9 @@ const { uploadOnCloudinary } = require("../utils/uploadToCloudinary.js");
 const TransporterDemand = require('../models/TransportRequirements.js')
 const retailerDemands = require("../models/RetailerRequirements.js")
 const {getCoordinates} = require("../services/geocodingService.js")
-const {calculateByRoadDistance} = require("../services/distanceCalculator.js")
+const {calculateByRoadDistance} = require("../services/distanceCalculator.js");
+const RetailerRequirements = require("../models/RetailerRequirements.js");
+const User = require("../models/User.js")
 
 require("dotenv").config();
 
@@ -121,25 +123,23 @@ exports.viewBestDeals = async(req, res) => {
             })
         }
 
-        const matchedDemands = await retailerDemands.find({crop:crop, cropGrade:cropgrade});
+        const matchedDemands = await retailerDemands.find({crop:crop, cropGrade:cropgrade}).populate('userId', 'averageRating');  
         if(matchedDemands.length === 0){
             return res.status(404).json({
                 success:false,
                 message:"No matches found for the uploaded crop. Please try again later."
             })
         }
-
+        
         const k1 = 0.7, k2 = 0.15, k3 = 0.15;
 
         const demandsWithScores = await Promise.all(
             matchedDemands.map(async (demand) => {
-                const populatedDemand = await demand.populate('userId', 'averageRating');
                
 
-                const priceOffered = populatedDemand.pricePerQuintal;
-                const retailerRating = populatedDemand.userId.averageRating;
-                const retailerLocation = populatedDemand.location.address;
-                
+                const priceOffered = demand.pricePerQuintal;
+                const retailerRating = demand.userId?.averageRating || 0;
+                const retailerLocation = demand.location.address;
 
                 const distance = await calculateByRoadDistance(retailerLocation, location);
                 
@@ -152,7 +152,7 @@ exports.viewBestDeals = async(req, res) => {
 
 
                 //Return an object for every demand. Array of objects will be created.
-                return { demand: populatedDemand, dealScore };
+                return { demand, dealScore };
             })
         );
         
@@ -171,6 +171,103 @@ exports.viewBestDeals = async(req, res) => {
             success:false,
             message:"Error in finding the best deals."
         })
+    }
+};
+
+
+//REAL LIFE SCENARIO
+//In a hurry to sell your crop ? Find the best deals near you !
+exports.viewBestDealsInRange = async (req, res) => {
+    try{
+
+        const {crop, cropgrade, quantity, location, maxdist} = req.body;  //quantity is qty of stock posted by farmer, location is a string, maxdist is range in km
+
+        if(maxdist <= 0 || typeof(maxdist) !== "number"){
+            return res.status(400).json({
+                success:false,
+                message:"The range should be a positive number."
+            })
+        }
+
+        //north to south distance of India is ~3200km
+        if(maxdist > 3300){
+            return res.status(400).json({
+                success:false,
+                message:"Too large range. Enter a smaller value."
+            })
+        }
+
+        if(!crop || !cropgrade || !quantity || !location){
+            return res.status(400).json({
+                success:false,
+                message:"To view best deals near you, crop, cropgrade, quantity, location and range are required fields"
+            })
+        }
+
+
+        const matchedDemands = await retailerDemands.find({crop:crop, cropGrade:cropgrade}).populate('userId', 'averageRating');
+
+
+        if(matchedDemands.length === 0){
+            return res.status(404).json({
+                success:false,
+                message:"No matches found for the uploaded crop. Please try again later."
+            })
+        }
+
+        const k1 = 0.7, k2 = 0.15, k3 = 0.15;
+
+        const demandsWithScores = await Promise.all(
+            matchedDemands.map(async (demand) => {
+               
+                const priceOffered = demand.pricePerQuintal;
+                const retailerRating = demand.userId.averageRating;
+                const retailerLocation = demand.location.address;
+                
+                const distance = await calculateByRoadDistance(retailerLocation, location);
+
+                if(distance > maxdist) return null;
+                
+                //temporary - 7rs per km
+                const profitMargin = (priceOffered * quantity) - (distance * 7);
+
+                const dealScore = parseFloat(
+                    (k1 * profitMargin - k2 * distance + k3 * retailerRating).toFixed(2)
+                );
+
+
+                //Return an object for every demand. Array of objects will be created.
+                return { demand, dealScore };
+            })
+        );
+
+        const validDemandsWithScores = await demandsWithScores.filter((item) => item !== null);
+
+        console.log(validDemandsWithScores);
+
+        if(validDemandsWithScores.length === 0){
+            return res.status(404).json({
+                success:false,
+                message:`No matches found for the uploaded crop within ${maxdist} km. Please try again later.`
+            })
+        }
+        
+        validDemandsWithScores.sort((a,b) => {
+            return b.dealScore - a.dealScore;
+        })
+
+        return res.status(200).json({
+            success:true,
+            message:`Checkout the MOST PROFITABLE DEALS within range of ${maxdist} km !`,
+            validDemandsWithScores
+        })
+         
+    } catch(error){
+        console.error("Error finding deals within range:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error in finding the best deals within the given range.",
+        });
     }
 }
 
