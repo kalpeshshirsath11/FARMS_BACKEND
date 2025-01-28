@@ -6,21 +6,21 @@ const requestStatusSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: User,
     },
-    Farmerid: {
+    Farmerid:[ {
         type: mongoose.Schema.Types.ObjectId,
         ref: User,
-    },
+    }],
     crop: {
         type: String,
         // required: true,
         trim: true,
     },
-    quantity: {
+    quantity: [{
         type: Number,
         required: true,
-    },
+    }],
     
-    Departlocation: {
+    Departlocation: [{
         type: {
             type: String, // GeoJSON type must be "Point"
             enum: ["Point"],
@@ -34,7 +34,7 @@ const requestStatusSchema = new mongoose.Schema({
             type: [Number], // [longitude, latitude]
             required: true,
         },
-    },
+    }],
     Destination: {
         type: {
             type: String, // GeoJSON type must be "Point"

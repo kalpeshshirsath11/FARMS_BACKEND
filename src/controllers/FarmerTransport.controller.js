@@ -8,9 +8,6 @@ const Notification = require('../models/notification.model.js');
 const requestTransport = async (req, res) => {
     try {
         const { departLocation, deliveryLocation, dateOfJourney, quantity } = req.body;
-
-        
-        
         const departCords = await getCoordinates(departLocation);
         const deliveryCords = await getCoordinates(deliveryLocation);
         if(!departCords || !deliveryCords){
@@ -226,4 +223,126 @@ const tranportReqfarmer = async (req, res) => {
   };
   
 
-module.exports = {requestTransport,tranportReqfarmer,reqFarmer}
+  const getNotifications = async (req, res) => {
+    try {
+      const userId = req.user._id;
+      if (!userId) {
+        return res.json({
+          message: "Error occurred in authentication",
+          success: false
+        });
+      }
+  
+      // Use the $in operator to check if the userId exists in the _receiverId array
+      const myNotifications = await Notification.find({
+        _receiverId: { $in: [userId] }
+      });
+      
+      
+  
+      return res.json({
+        success: true,
+        notifications: myNotifications
+      });
+    } catch (err) {
+      console.log("An internal server error occurred", err);
+      return res.json({
+        message: "Internal server error",
+        success: false
+      });
+    }
+  };
+  
+  const acceptRequest = async (req, res) => {
+    try {
+        // 1. Get requirement ID from query
+        const _acceptId = req.query.notif_id;
+
+        if (!_acceptId || !mongoose.Types.ObjectId.isValid(_acceptId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or missing transport requirement ID (_acceptId).",
+            });
+        }
+
+        // 2. Fetch notification
+        const notify = await Notification.findById(_acceptId);
+        if (!notify) {
+            return res.status(404).json({
+                success: false,
+                message: "Notification not found.",
+            });
+        }
+
+        // 3. Collect Farmer IDs
+        const FarmerIds = [...(notify._receiverId || []), notify._senderId];
+        if (FarmerIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Farmer IDs not found.",
+            });
+        }
+
+        // 4. Fetch both requirements
+        const _farmreq1 = await TransporterDemand.findById(notify._farmerRequirementId);
+        const _farmreq2 = await TransporterDemand.findById(notify._senderFarmerRequirementId);
+
+        if (!_farmreq1 || !_farmreq2) {
+            return res.status(404).json({
+                success: false,
+                message: "One or both requirements not found.",
+            });
+        }
+
+        // 5. Merge data
+        const Departlocations = [..._farmreq1.Departlocations, ..._farmreq2.Departlocations];
+        const Destination = _farmreq2.Destination;
+        const DepartureDate = _farmreq2.DepartureDate;
+        const contactNumber = [..._farmreq1.contactNumber, ..._farmreq2.contactNumber];
+        const quantities = [..._farmreq1.quantities, ..._farmreq2.quantities];
+
+        if (!Destination || !DepartureDate || !contactNumber.length || !quantities.length) {
+            return res.status(400).json({
+                success: false,
+                message: "Required data is missing.",
+            });
+        }
+
+        // 6. Create new request
+        const newRequest = await TransporterDemand.create({
+            FarmerIds,
+            Departlocations,
+            Destination,
+            DepartureDate,
+            quantities,
+            contactNumber,
+        });
+
+        if (!newRequest) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to create the new request.",
+            });
+        }
+
+        // 7. Delete old requirements
+        await TransporterDemand.findByIdAndDelete(_farmreq1._id);
+        await TransporterDemand.findByIdAndDelete(_farmreq2._id);
+
+        return res.status(201).json({
+            success: true,
+            message: "New request created successfully.",
+            newRequest,
+        });
+    } catch (err) {
+        console.error("An internal server error occurred:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error.",
+        });
+    }
+};
+
+
+  
+module.exports = {requestTransport,tranportReqfarmer,reqFarmer,getNotifications,acceptRequest}

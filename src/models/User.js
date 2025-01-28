@@ -25,11 +25,7 @@ const userSchema = new mongoose.Schema({
         type:String,
         required:true
     },
-    additionalDetails:{
-        type:mongoose.Schema.Types.ObjectId,
-        // required:true,
-        ref:"Profile"
-    },
+    
     profilePhoto:{
         type:String, //image url
         // required: true
