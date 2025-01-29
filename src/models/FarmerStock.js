@@ -39,10 +39,18 @@ const farmerStockSchema = new mongoose.Schema({
           required: true
       },
     },
+    accepted:{
+        type:Boolean,
+        default:false
+    },
+    contactNumber:{  //not mandatory -> This will be displayed in PENDING REQUESTS and SUPPLIERS so retailer can contact farmer
+        type:String,
+        trim:true
+    }
 },
 {
     timestamps: true, //This automatically adds createdAt and updatedAt fields to your schema and updates the updatedAt field whenever the document is modified.
 }
 )
 
-module.exports = mongoose.model("Farmer", farmerStockSchema);
+module.exports = mongoose.model("FarmerStock", farmerStockSchema);

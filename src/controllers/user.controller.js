@@ -20,7 +20,7 @@ const signUpUser = async (req, res) => {
             accountType,
             password
         } = req.body;
-        const profile = req.file.path;
+        const profile = req.file?.path;
         const photo = await uploadOnCloudinary(profile);
 
         // console.log(firstName, lastName, accountType, password, contactNumber);

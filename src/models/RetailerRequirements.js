@@ -39,6 +39,30 @@ const retailerRequirementSchema = new mongoose.Schema({
             required:true
         }
     },
+    expectedDeliveryDate: {   //ISO format YYYY-MM-DD
+        type: Date,
+        required: true 
+    },
+    isFull:{
+        type:Boolean,
+        default:false
+    },
+    suppliers:[
+        {
+            type:mongoose.Schema.Types.ObjectId,
+            ref:"FarmerStock"
+        }
+    ],
+    pendingRequests:[
+        {
+            type:mongoose.Schema.Types.ObjectId,
+            ref:"FarmerStock"
+        }
+    ],
+    contactNumber:{  //not mandatory -> This will be displayed in BEST DEALS so farmers can contact retailer
+        type:String,
+        trim:true
+    }
 },
 {
     timestamps: true, //This automatically adds createdAt and updatedAt fields to your schema and updates the updatedAt field whenever the document is modified.

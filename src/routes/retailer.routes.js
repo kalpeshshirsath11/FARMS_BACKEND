@@ -5,9 +5,23 @@ const router = express.Router();
 const {postRequirement} = require("../controllers/RetailerOperations.controller.js")
 const {createReview, getReviews, updateRating, editComment, deleteReview} = require('../controllers/RatingReviewOperations.js')
 
+const {viewNotifications, acceptSupplyRequest, declineSupplyRequest, viewMyOrders,viewPendingRequests, viewSuppliersOfOrder, acceptSupplyRequestFromMyOrders, declineSupplyRequestFromMyOrders} = require("../controllers/RetailerOperations.controller.js")
 
-router.post('/postrequirement', postRequirement);
-router.get('/getstock',getStock);
+
+
+
+router.post('/postrequirement', postRequirement);  
+router.get('/notifications', viewNotifications)  
+router.get('/acceptsupplyrequest', acceptSupplyRequest)  
+router.get('/declinesupplyrequest', declineSupplyRequest)  
+router.get('/viewmyorders', viewMyOrders)  
+router.get('/viewpendingrequests', viewPendingRequests)  
+router.get('/viewsuppliers', viewSuppliersOfOrder)  
+router.get('/acceptsupplyrequestfromorders', acceptSupplyRequestFromMyOrders)  
+router.get('/declinesupplyrequestfromorders', declineSupplyRequestFromMyOrders)
+
+
+// router.get('/getstock',getStock);
 router.post('/createreview',  createReview);
 router.post('/updaterating',  updateRating);
 router.post('/editcomment',  editComment);

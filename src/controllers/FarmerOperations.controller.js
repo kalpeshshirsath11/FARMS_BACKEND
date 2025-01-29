@@ -1,4 +1,5 @@
 const { ItemAssignmentContextImpl } = require("twilio/lib/rest/numbers/v2/regulatoryCompliance/bundle/itemAssignment");
+const mongoose = require('mongoose');
 const { upload } = require("../middlewares/multer.middleware.js");
 const FarmerStock = require("../models/FarmerStock.js");
 const { uploadOnCloudinary } = require("../utils/uploadToCloudinary.js");
@@ -6,14 +7,18 @@ const TransporterDemand = require('../models/TransportRequirements.js')
 const retailerDemands = require("../models/RetailerRequirements.js")
 const {getCoordinates} = require("../services/geocodingService.js")
 const {calculateByRoadDistance} = require("../services/distanceCalculator.js");
-const RetailerRequirements = require("../models/RetailerRequirements.js");
+// const RetailerRequirements = require("../models/RetailerRequirements.js");
 const User = require("../models/User.js")
+const UserNotifications = require("../models/UserNotifications.js");
+const Notifications = require("../models/Notifications.js")
+const client = require("../utils/twilioClient");
+const validator = require("validator");
 
 require("dotenv").config();
 
 exports.postStock = async (req, res) => {
    try{
-    const {cropname, cropgrade, quantity, location} = req.body;  //location should be comma separated village,taluka,district
+    const {cropname, cropgrade, quantity, location, contactNumber} = req.body;  //location should be comma separated village,district and state
    
     const farmerDetails = req.user;
 
@@ -32,6 +37,10 @@ exports.postStock = async (req, res) => {
         });
     }
 
+    if (!validator.isMobilePhone(contactNumber, 'any')) {
+            return res.status(400).json({ error: "Invalid contact number" });
+    }
+
     const image = req.file.path;
     if(!image){
         return res.json({errr:"Image is required"})
@@ -46,13 +55,16 @@ exports.postStock = async (req, res) => {
     }
 
     const locationcoordinates = await getCoordinates(location);
-    if (!locationcoordinates || locationcoordinates.length !== 2) {
+    if (!locationcoordinates) {
       return res.status(400).json({
         success: false,
         message: "Invalid location. Unable to retrieve coordinates.",
       });
     }
-    console.log(locationcoordinates);
+    // console.log(locationcoordinates);
+
+    const longi  = locationcoordinates.lon;
+    const lati  = locationcoordinates.lat;
 
     const newStock = await FarmerStock.create({
         userId: farmerDetails._id,
@@ -63,13 +75,14 @@ exports.postStock = async (req, res) => {
         location: {
             type:"Point",
             address:location,
-            coordinates:locationcoordinates
-        }
+            coordinates:[longi, lati]
+        },
+        contactNumber:contactNumber
     });
 
     return res.status(200).json({
         success: true,
-        stock:newStock,
+        stock:newStock,   //When stock is posted, pass the ID of the posted stock as query parameter (to be accessed when farmer clicks on "Request supply" on the BEST DEALS page)
         message: "Stock posted successfully!",
     });
    } catch(error){
@@ -84,8 +97,10 @@ exports.postStock = async (req, res) => {
 
 exports.viewMyStock = async (req, res) => {
     try {
-        const farmerDetails = req.user;
-        const farmerId = farmerDetails._id;
+        // const farmerDetails = req.user;
+        // const farmerId = farmerDetails._id;
+
+        const farmerId = req.query;  //Farmer is logged in, so we can get _id from payload
 
         const myStock = await FarmerStock.find({ userId: farmerId }).sort({createdAt: -1});  //newest first
 
@@ -123,7 +138,7 @@ exports.viewBestDeals = async(req, res) => {
             })
         }
 
-        const matchedDemands = await retailerDemands.find({crop:crop, cropGrade:cropgrade}).populate('userId', 'averageRating');  
+        const matchedDemands = await retailerDemands.find({isFull:false ,crop:crop, cropGrade:cropgrade}).populate('userId', 'averageRating');  
         if(matchedDemands.length === 0){
             return res.status(404).json({
                 success:false,
@@ -134,8 +149,7 @@ exports.viewBestDeals = async(req, res) => {
         const k1 = 0.7, k2 = 0.15, k3 = 0.15;
 
         const demandsWithScores = await Promise.all(
-            matchedDemands.map(async (demand) => {
-               
+            matchedDemands.map(async (demand) => {  
 
                 const priceOffered = demand.pricePerQuintal;
                 const retailerRating = demand.userId?.averageRating || 0;
@@ -163,7 +177,15 @@ exports.viewBestDeals = async(req, res) => {
         return res.status(200).json({
             success:true,
             message:"Checkout the MOST PROFITABLE DEALS for your crop !",
-            demandsWithScores
+            demandsWithScores   //Use day.js for formatting the date from YYYY-MM-DD to DD-MM-YYYY 
+            /*// Install day.js via npm
+            // npm install dayjs
+            const dayjs = require('dayjs');
+
+            const backendDate = "2025-01-27";
+            const formattedDate = dayjs(backendDate).format('DD-MM-YYYY');
+            console.log(formattedDate); // Outputs: 27-01-2025
+            */
         })
     } catch(error){
         console.error(error);
@@ -205,7 +227,7 @@ exports.viewBestDealsInRange = async (req, res) => {
         }
 
 
-        const matchedDemands = await retailerDemands.find({crop:crop, cropGrade:cropgrade}).populate('userId', 'averageRating');
+        const matchedDemands = await retailerDemands.find({isFull:false ,crop:crop, cropGrade:cropgrade}).populate('userId', 'averageRating');
 
 
         if(matchedDemands.length === 0){
@@ -259,7 +281,15 @@ exports.viewBestDealsInRange = async (req, res) => {
         return res.status(200).json({
             success:true,
             message:`Checkout the MOST PROFITABLE DEALS within range of ${maxdist} km !`,
-            validDemandsWithScores
+            validDemandsWithScores  //Use day.js for formatting the date from YYYY-MM-DD to DD-MM-YYYY 
+            /*// Install day.js via npm
+            // npm install dayjs
+            const dayjs = require('dayjs');
+
+            const backendDate = "2025-01-27";
+            const formattedDate = dayjs(backendDate).format('DD-MM-YYYY');
+            console.log(formattedDate); // Outputs: 27-01-2025
+            */
         })
          
     } catch(error){
@@ -267,6 +297,111 @@ exports.viewBestDealsInRange = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Error in finding the best deals within the given range.",
+        });
+    }
+}
+
+//When farmer clicks on "Request supply" on the BEST DEALS page
+exports.requestSupply = async(req, res) => {
+    try{
+
+        const { farmerstockId, quantity, crop } = req.query; // Extract farmer stock details from query
+        if (!farmerstockId || !quantity || !crop) {
+            return res.status(400).json({
+                success: false,
+                message: "Farmer stock details are incomplete.",
+            });
+        }
+
+        const {retailerRequirementId} = req.body;
+        if (!retailerRequirementId) {
+            return res.status(404).json({
+                success: false,
+                message: "Retailer requirement ID not found.",
+            });
+        }
+
+        const retailerRequirement = await retailerDemands.findById(retailerRequirementId);
+        console.log(retailerRequirement);
+        if (!retailerRequirement) {
+            return res.status(404).json({
+                success: false,
+                message: "Retailer requirement not found.",
+            });
+        }
+     
+        const retailerId = retailerRequirement.userId;
+
+        const newNotif = await Notifications.create({
+            body:`A farmer is interested in supplying ${quantity} quintals of ${crop}.`,  //There will be "View Details" button on the notification, which will redirect to a page which will display farmer stock info using farmerStockId. On that page, there will be "Accept" and "Decline" buttons."
+            stockID:farmerstockId,
+            requirementId:retailerRequirementId
+        })
+
+       
+        let updatedNotification;
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            updatedNotification = await UserNotifications.findOneAndUpdate(
+                { userId: retailerId },
+                { $push: { notification: newNotif._id } },
+                { new: true, upsert: true, session }
+            );
+
+            if (!retailerRequirement.pendingRequests.includes(farmerstockId)) {
+                retailerRequirement.pendingRequests.push(farmerstockId);
+                await retailerRequirement.save({ session });
+            }
+
+            await session.commitTransaction();
+        } catch (error) {
+            await session.abortTransaction();
+            console.error("Error during transaction:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Failed to update retailer requirement or notification.",
+            });
+        } finally {
+            session.endSession();
+        }
+       
+
+        const populatedRetailer = await User.findById(retailerId).select('contactNumber firstName lastName');
+        if (!populatedRetailer) {
+            return res.status(404).json({
+                success: false,
+                message: "Retailer not found.",
+            });
+        }
+
+        const { contactNumber, firstName, lastName } = populatedRetailer;
+
+        try {
+            await client.messages.create({
+                from: process.env.TWILIO_PHONE_NUMBER,
+                to: contactNumber,
+                body: `Hello ${firstName} ${lastName}.A farmer is interested in supplying ${quantity} quintals of ${crop}. Please check in-app notifications for more info.`,
+            });
+        } catch (twilioError) {
+            console.error("Failed to send SMS notification to the retailer", twilioError);
+            // return res.status(500).json({
+            //     success: false,
+            //     message: "Failed to send SMS notification to the retailer.However, your've been added to the pending requests of the order. Kindly check the app.",
+            // });
+        }
+
+        return res.status(200).json({
+            success:true,
+            message:"Requested for supply successfully.",
+            updatedNotification
+        })
+
+    } catch(error){
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Error in requesting the retailer for supply",
         });
     }
 }

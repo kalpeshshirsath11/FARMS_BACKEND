@@ -17,6 +17,7 @@ async function getCoordinates(location) {
     throw error;
   } 
 }
+
 async function reverseGeocode(lat, lon) {
   const url = `https://nominatim.openstreetmap.org/reverse?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&format=json`;
 

@@ -48,8 +48,7 @@ const userSchema = new mongoose.Schema({
     reviewCount:{
         type:Number,
         default:0
-    }
-    
+    }    
 },
 {
     timestamps: true, //This automatically adds createdAt and updatedAt fields to your schema and updates the updatedAt field whenever the document is modified.
