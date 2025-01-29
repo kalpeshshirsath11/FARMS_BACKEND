@@ -71,4 +71,3 @@ transportRequirementSchema.index({ "Departlocations.coordinates": "2dsphere" });
 module.exports = mongoose.model("Transporter", transportRequirementSchema);
 
 
-// module.exports = mongoose.model("Transporter", transportRequirementSchema);

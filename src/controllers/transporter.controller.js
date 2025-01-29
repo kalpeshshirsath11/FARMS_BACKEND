@@ -45,7 +45,7 @@ const requstStatusfunction = async (req, res) => {
 
         // Fetch transporter and farmer details
         const transporter = await User.findById(_transporterId);
-        const _farmerId = requirement.FarmerId;
+        const _farmerId = requirement.FarmerIds;
         const farmer = await User.findById(_farmerId);
 
         if (!transporter || !farmer) {
@@ -59,10 +59,10 @@ const requstStatusfunction = async (req, res) => {
         const transporterContact = transporter.contactNumber;
 
         // Check if departLocation and deliveryLocation are valid
-        const depart = requirement.Departlocation;
+        const depart = requirement.Departlocations;
         const dest = requirement.Destination;
 
-        if (!depart || !depart.place || !depart.coordinates || !dest || !dest.place || !dest.coordinates) {
+        if (!dest || !dest.place || !dest.coordinates) {
             return res.status(400).json({
                 success: false,
                 message: "Missing or incomplete location information.",
@@ -76,7 +76,7 @@ const requstStatusfunction = async (req, res) => {
             Departlocation:depart,
             Destination:dest,
             DepatrureDate: requirement.DepatrureDate,
-            quantity: requirement.quantity,
+            quantity: requirement.quantities,
         });
 
         await Transporter.deleteOne({ _id: _transportRequirementId });
