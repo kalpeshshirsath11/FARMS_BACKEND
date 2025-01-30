@@ -46,6 +46,16 @@ const farmerStockSchema = new mongoose.Schema({
     contactNumber:{  //not mandatory -> This will be displayed in PENDING REQUESTS and SUPPLIERS so retailer can contact farmer
         type:String,
         trim:true
+    },
+    pendingRetailerRequests:[
+        {
+            type:mongoose.Schema.Types.ObjectId,
+            ref:"Retailer"  //retailer requirement
+        }
+    ],
+    confirmedRetailer:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"Retailer"  //retailer requirement
     }
 },
 {

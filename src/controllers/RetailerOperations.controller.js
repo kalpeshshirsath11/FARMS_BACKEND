@@ -8,7 +8,7 @@ const Notifications = require("../models/Notifications.js");
 const client = require("../utils/twilioClient");
 const User = require("../models/User.js");
 require("dotenv").config()
-const validator = require("validator")
+const validator = require("validator");
 
 
 exports.postRequirement = async (req, res) => {    
@@ -277,7 +277,7 @@ exports.acceptSupplyRequest = async (req, res) => {
             try {
                 await farmerStock.save();
             } catch (saveError) {
-                throw new Error("Failed to update farmer stock status isFull.");
+                throw new Error("Failed to update farmer stock status 'accepted'.");
             }
 
             await session.commitTransaction();
@@ -746,6 +746,223 @@ exports.declineSupplyRequestFromMyOrders = async(req, res) => {
         })
     }
 }
+
+exports.deleteNotification = async (req, res) => {
+    try {
+        const {notificationId} = req.body; // From the "All notifications" page
+        const { myId } = req.query; //user is logged in, so we can get this from payload
+
+        if (!notificationId || !myId) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing notificationId or myId."
+            });
+        }
+
+        const updatedUserNotification = await UserNotifications.findOneAndUpdate(
+            { userId: myId },
+            { $pull: { notification: notificationId } },
+            { new: true }
+        );
+
+        if (!updatedUserNotification) {
+            return res.status(404).json({
+                success: false,
+                message: "User notification record not found or notification not present."
+            });
+        }
+
+        const deletedNotification = await Notifications.findByIdAndDelete(notificationId);
+
+        if (!deletedNotification) {
+            return res.status(404).json({
+                success: false,
+                message: "Notification not found."
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Notification deleted successfully."
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error while deleting notification."
+        });
+    }
+};
+
+
+//------------------------------------------------------------------------------------------------
+
+exports.viewBestFarmerOffers = async(req, res) => {
+    try{
+        const {crop, cropgrade, quantity} = req.body; 
+        
+                if(!crop || !cropgrade || !quantity){
+                    return res.status(400).json({
+                        success:false,
+                        message:"To view best offers, crop, cropgrade, quantity, are required fields"
+                    })
+                }
+        
+                const matchedOffers = await FarmerStock.find({accepted:false ,crop:crop, cropGrade:cropgrade}).populate('userId'); 
+                if(matchedOffers.length === 0){
+                    return res.status(404).json({
+                        success:false,
+                        message:"No offers found for the uploaded requirement. Please try again later."
+                    })
+                }
+
+                matchedOffers.sort((a, b) => {
+                    const ratingA = a.userId?.averageRating || 0;
+                    const ratingB = b.userId?.averageRating || 0;
+                    return ratingB - ratingA;
+                });
+        
+                return res.status(200).json({
+                    success: true,
+                    message: "Checkout the best offers!",
+                    offers: matchedOffers 
+                });
+
+
+    } catch(error){
+        console.error(error);
+        return res.status(500).json({
+            success:false,
+            message:"Error in fetching the best farmer offers."
+        })
+    }
+}
+
+
+exports.requestFarmersCrop = async (req, res) => {
+    try{
+
+        const { retailerRequirementId} = req.query;
+        if (!retailerRequirementId) {
+            return res.status(400).json({
+                success: false,
+                message: "Retailer requirement Id not found.",
+            });
+        }
+
+        const {farmerstockId} = req.body;
+        if (!farmerstockId) {
+            return res.status(404).json({
+                success: false,
+                message: "farmerstockId not found.",
+            });
+        }
+
+        const farmerStock = await FarmerStock.findById(farmerstockId);
+        // console.log(farmerStock);
+        if (!farmerStock) {
+            return res.status(404).json({
+                success: false,
+                message: "Farmer stock not found.",
+            });
+        }
+
+        if(farmerStock.accepted === true){
+            return res.status(200).json({
+                success:true,
+                message:"This stock has already been ordered by another retailer."
+            })
+        }
+
+        const quantity = farmerStock.quantity;
+        if(!quantity){
+            return res.status(500).json({
+                success:false,
+                message:"Failed to fetch quantity of farmers crop."
+            })
+        }
+        const crop = farmerStock.crop;
+        if(!crop){
+            return res.status(500).json({
+                success:false,
+                message:"Failed to fetch farmers crop."
+            })
+        }
+
+        const farmerId = farmerStock.userId;
+
+        const newNotif = await Notifications.create({
+            body:`A retailer has requested ${quantity} quintals of your crop ${crop}. Checkout the offer.`,
+            stockID:farmerstockId,
+            requirementId:retailerRequirementId
+        })
+
+        let updatedNotification;
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            updatedNotification = await UserNotifications.findOneAndUpdate(
+                { userId: farmerId },
+                { $push: { notification: newNotif._id } },
+                { new: true, upsert: true, session }
+            );
+
+            farmerStock.pendingRetailerRequests.push(retailerRequirementId);
+            await farmerStock.save();
+
+            await session.commitTransaction();
+        } catch (error) {
+            await session.abortTransaction();
+            console.error("Error during transaction:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Failed to update farmer notification.",
+            });
+        } finally {
+            session.endSession();
+        }
+
+        const farmer = await User.findById(farmerId).select('contactNumber firstName lastName');
+        if (!farmer) {
+            return res.status(404).json({
+                success: false,
+                message: "Farmer not found.",
+            });
+        }
+
+        const { contactNumber, firstName, lastName } = farmer;
+
+        try {
+            await client.messages.create({
+                from: process.env.TWILIO_PHONE_NUMBER,
+                to: contactNumber,
+                body: `Hello ${firstName} ${lastName}.A retailer has requested ${quantity} quintals of your crop ${crop}. Please check in-app notifications for more info.`,
+            });
+        } catch (twilioError) {
+            console.error("Failed to send SMS notification to the farmer", twilioError);
+            // return res.status(500).json({
+            //     success: false,
+            //     message: "Failed to send SMS notification to the retailer.However, your've been added to the pending requests of the order. Kindly check the app.",
+            // });
+        }
+
+        return res.status(200).json({
+            success:true,
+            message:"Successfully requested the farmer for his crop.",
+            updatedNotification
+        })
+
+    } catch(error){
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Error in requesting the farmer for his crop.",
+        });
+    }
+}
+
+
 
 
 // exports.getStock = async(req,res)=>{
