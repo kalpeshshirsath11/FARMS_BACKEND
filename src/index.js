@@ -10,11 +10,12 @@ const farmRoute = require('./routes/farmer.routes.js')
 const retailerRoute = require('./routes/retailer.routes.js')
 const transportRoute = require('./routes/transporter.routes.js')
 const {authorize, isFarmer, isRetailer, isTransporter} = require("./middlewares/auth.js")
+const cors = require("cors")
 
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
-
+app.use(cors())
 app.use(cookieParser())
 
 

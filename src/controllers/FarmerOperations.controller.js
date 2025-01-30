@@ -916,14 +916,7 @@ exports.acceptRetailerRequestFromMyOrders = async (req, res) => {
                 console.error("Error sending SMS to retailer via Twilio:", twilioError);  //If notification fails, dont roll back, just log the error
             }
 
-            // farmerStock.accepted = true;
-            // try {
-            //     await farmerStock.save({session});
-            // } catch (saveError) {
-            //     throw new Error("Failed to update farmer stock status 'accepted'.");
-            // }
-
-
+           
             await session.commitTransaction();
             return res.status(200).json({
                 success:true,
