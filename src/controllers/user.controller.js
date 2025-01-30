@@ -21,7 +21,10 @@ const signUpUser = async (req, res) => {
             password
         } = req.body;
         const profile = req.file?.path;
-        const photo = await uploadOnCloudinary(profile);
+        if(profile){
+            const photo = await uploadOnCloudinary(profile);
+        }
+        
 
         // console.log(firstName, lastName, accountType, password, contactNumber);
 
@@ -61,7 +64,7 @@ const signUpUser = async (req, res) => {
         console.log(`Generated OTP for ${contactNumber}: ${otp}`);
 
         
-        const e_password = await bcrypt.hash(password,10);
+        
 
         await client.messages.create({
             from: process.env.TWILIO_PHONE_NUMBER,
@@ -69,14 +72,7 @@ const signUpUser = async (req, res) => {
             body: `Your OTP is ${otp}`,
         });
 
-        user1 = {
-            firstName,
-            lastName,
-            contactNumber,
-            accountType,
-            password: e_password,
-            profilePhoto: photo?.url||`https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
-        };
+        
 
         return res.status(200).json({
             message: "OTP sent successfully",
@@ -91,7 +87,7 @@ const signUpUser = async (req, res) => {
 
 const verifyOtp = async (req, res) => {
     try {
-        const { otp, contactNumber } = req.body;
+        const { otp, contactNumber,firstName ,lastName,accountType,password,profilePhoto} = req.body;
 
         if (!validator.isMobilePhone(contactNumber, "any", { strictMode: true })) {
             return res.status(400).json({ error: "Invalid contact number format" });
@@ -106,8 +102,16 @@ const verifyOtp = async (req, res) => {
 
         await Otp.deleteOne({ _id: storedOtp._id });
 
-        const user2 = await User.create(user1);
-        user1 = {};
+        const e_password = await bcrypt.hash(password,10);
+        const user2 = await User.create({
+            firstName,
+            lastName,
+            contactNumber,
+            accountType,
+            password: e_password,
+            profilePhoto: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
+        });
+        
 
 
         return res.status(200).json({
