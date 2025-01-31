@@ -13,7 +13,7 @@ const UserNotifications = require("../models/UserNotifications.js");
 const Notifications = require("../models/Notifications.js")
 const client = require("../utils/twilioClient");
 const validator = require("validator");
-
+const {calculateByRoadDistanceWithCoordinates} = require("../services/distanceCalcWithCoordinates.js")
 
 require("dotenv").config();
 
@@ -106,22 +106,28 @@ exports.postStock = async (req, res) => {
 //MASTER STROKE !
 exports.viewBestDeals = async(req, res) => {
     try{
-        const {crop, cropgrade, quantity, location} = req.body;  //quantity is qty of stock posted by farmer, location is a string
+        const {farmerStockId} = req.query;
 
-        if(!crop || !cropgrade || !quantity || !location){
+        const farmerStock = await FarmerStock.findById(farmerStockId);
+
+        const {crop, cropGrade, quantity, location} = farmerStock;  
+
+        if(!crop || !cropGrade || !quantity || !location){
             return res.status(400).json({
                 success:false,
                 message:"To view best deals, crop, cropgrade, quantity, location are required fields"
             })
         }
 
-        const matchedDemands = await retailerDemands.find({isFull:false ,crop:crop, cropGrade:cropgrade}).populate('userId', 'averageRating');  
+        const matchedDemands = await retailerDemands.find({isFull:false ,crop:crop, cropGrade:cropGrade}).populate('userId', 'averageRating');  
         if(matchedDemands.length === 0){
             return res.status(404).json({
                 success:false,
                 message:"No matches found for the uploaded crop. Please try again later."
             })
         }
+
+        const farmerCoordinates = location.coordinates;
         
         const k1 = 0.7, k2 = 0.15, k3 = 0.15;
 
@@ -130,13 +136,14 @@ exports.viewBestDeals = async(req, res) => {
 
                 const priceOffered = demand.pricePerQuintal;
                 const retailerRating = demand.userId?.averageRating || 0;
-                const retailerLocation = demand.location.address;
+                const retailerCoordinates = demand.location.coordinates;
 
-                const distance = await calculateByRoadDistance(retailerLocation, location);
+                const distance = await calculateByRoadDistanceWithCoordinates(retailerCoordinates, farmerCoordinates);
                 if (typeof distance !== "number" || isNaN(distance)) {
-                    console.warn(`Warning: Could not calculate distance between ${retailerLocation} and ${location}.`);
+                    console.warn(`Warning: Could not calculate distance between retailer and farmer.`);
                     return null;  // Skip this deal from ranking
                 }
+
                 
                 //temporary - 7rs per km
                 const profitMargin = (priceOffered * quantity) - (distance * 7);
@@ -182,10 +189,13 @@ exports.viewBestDeals = async(req, res) => {
 //In a hurry to sell your crop ? Find the best deals near you !
 exports.viewBestDealsInRange = async (req, res) => {
     try{
+        const {farmerStockId} = req.query;
+        const farmerStock = await FarmerStock.findById(farmerStockId);
 
-        const {crop, cropgrade, quantity, location, maxdist} = req.body;  //quantity is qty of stock posted by farmer, location is a string, maxdist is range in km
+        const {crop, cropGrade, quantity, location} = farmerStock;  
+        const {maxdist} = req.body;
 
-        maxdist = Number(maxdist);
+        // maxdist = Number(maxdist);
 
         if(maxdist <= 0 || typeof(maxdist) !== "number"){
             return res.status(400).json({
@@ -202,7 +212,7 @@ exports.viewBestDealsInRange = async (req, res) => {
             })
         }
 
-        if(!crop || !cropgrade || !quantity || !location){
+        if(!crop || !cropGrade || !quantity || !location){
             return res.status(400).json({
                 success:false,
                 message:"To view best deals near you, crop, cropgrade, quantity, location and range are required fields"
@@ -210,7 +220,7 @@ exports.viewBestDealsInRange = async (req, res) => {
         }
 
 
-        const matchedDemands = await retailerDemands.find({isFull:false ,crop:crop, cropGrade:cropgrade}).populate('userId', 'averageRating');
+        const matchedDemands = await retailerDemands.find({isFull:false ,crop:crop, cropGrade:cropGrade}).populate('userId', 'averageRating');
 
 
         if(matchedDemands.length === 0){
@@ -220,16 +230,19 @@ exports.viewBestDealsInRange = async (req, res) => {
             })
         }
 
+        const farmerCoordinates = farmerStock.location.coordinates;
+
         const k1 = 0.7, k2 = 0.15, k3 = 0.15;
 
         const demandsWithScores = await Promise.all(
             matchedDemands.map(async (demand) => {
                
                 const priceOffered = demand.pricePerQuintal;
-                const retailerRating = demand.userId.averageRating;
-                const retailerLocation = demand.location.address;
-                
-                const distance = await calculateByRoadDistance(retailerLocation, location);
+                const retailerRating = demand.userId?.averageRating || 0;
+                // const retailerLocation = demand.location.address;
+                const retailerCoordinates = demand.location.coordinates;
+
+                const distance = await calculateByRoadDistanceWithCoordinates(retailerCoordinates, farmerCoordinates);
 
                 if(distance > maxdist) return null;
                 
@@ -246,9 +259,9 @@ exports.viewBestDealsInRange = async (req, res) => {
             })
         );
 
-        const validDemandsWithScores = await demandsWithScores.filter((item) => item !== null);
+        const validDemandsWithScores = demandsWithScores.filter((item) => item !== null);
 
-        console.log(validDemandsWithScores);
+        // console.log(validDemandsWithScores);
 
         if(validDemandsWithScores.length === 0){
             return res.status(404).json({
