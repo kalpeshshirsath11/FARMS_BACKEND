@@ -5,8 +5,7 @@ const Otp = require("../models/Otp.js")
 const validator = require("validator")
 const {validatePassword} = require("../middlewares/validatePassword.js")
 require("dotenv").config()
-// let otpStore = "";
-let user1 = {};
+
 const client = require("../utils/twilioClient");
 const {  uploadOnCloudinary } = require("../utils/uploadToCloudinary.js");
 
@@ -173,7 +172,11 @@ const loginUser = async(req,res)=>{
         // Send the token in an HTTP-only cookie instead of storing in db
         
 
-        res.cookie("token", token).status(200).json({
+        res.cookie("token", token,{
+            httpOnly:true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax"
+        }).status(200).json({
             success: true,
             token,
             message: "Logged in successfully",

@@ -24,6 +24,7 @@ exports.postStock = async (req, res) => {
     const farmerDetails = req.user;
 
     if(!cropname || !cropgrade || !quantity  ){
+        console.log("err 1")
         return res.status(400).json({
             success:false,
             message:"All fields are required to post stock"
@@ -32,17 +33,21 @@ exports.postStock = async (req, res) => {
 
     const quantityValue = Number(quantity);
     if (quantityValue <= 0) {
+        console.log("err2")
         return res.status(400).json({
+            
             success: false,
             message: "Quantity must be a positive number",
         });
     }
 
     if (!validator.isMobilePhone(contactNumber, 'any')) {
+        console.log("err 3")
             return res.status(400).json({ error: "Invalid contact number" });
     }
 
     if(!req.file){
+        console.log("err 4")
         return res.status(400).json({
             success:false,
             message:"Req.file not found while posting stock"
@@ -50,7 +55,8 @@ exports.postStock = async (req, res) => {
     }
     const image = req.file.path;
     if(!image){
-        return res.json({error:"Image is required"})
+        console.log('err 5')
+        return resstatus(400).json({error:"Image is required"})
     }
 
     const uploadedImage = await uploadOnCloudinary(image);
@@ -60,8 +66,8 @@ exports.postStock = async (req, res) => {
             message: "Failed to upload crop image to Cloudinary",
         });
     }
-
-    const locationcoordinates = await getCoordinates(location);
+const finalLocation = `${location.village} ${location.district} ${location.state}`
+    const locationcoordinates = await getCoordinates(finalLocation);
     if (!locationcoordinates) {
       return res.status(400).json({
         success: false,
@@ -72,7 +78,7 @@ exports.postStock = async (req, res) => {
 
     const longi  = locationcoordinates.lon;
     const lati  = locationcoordinates.lat;
-
+    
     const newStock = await FarmerStock.create({
         userId: farmerDetails._id,
         crop: cropname, 
@@ -81,7 +87,7 @@ exports.postStock = async (req, res) => {
         image: uploadedImage.secure_url,
         location: {
             type:"Point",
-            address:location,
+            address:finalLocation,
             coordinates:[longi, lati]
         },
         contactNumber:contactNumber,
