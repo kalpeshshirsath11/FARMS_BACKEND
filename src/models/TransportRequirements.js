@@ -68,6 +68,4 @@ const transportRequirementSchema = new mongoose.Schema(
 transportRequirementSchema.index({ "Departlocations.coordinates": "2dsphere" });
 
 
-module.exports = mongoose.model("Transporter", transportRequirementSchema);
-
-
+module.exports = mongoose.model("Transporterrequirement", transportRequirementSchema);

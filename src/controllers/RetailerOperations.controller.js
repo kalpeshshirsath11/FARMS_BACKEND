@@ -22,8 +22,9 @@ exports.postRequirement = async (req, res) => {
                 message:"All fields are required for posting crop requirements."
             })
         }
-
+        const finalLocation = `${location.village} ${location.district} ${location.state}`;
         if (!expectedDeliveryDate || isNaN(new Date(expectedDeliveryDate))) {
+            console.log("here is error")
             return res.status(400).json({
                 success: false,
                 message: "A valid expected delivery date is required.",
@@ -63,7 +64,7 @@ exports.postRequirement = async (req, res) => {
 
           
 
-        const locationcoordinates = await getCoordinates(location);
+        const locationcoordinates = await getCoordinates(finalLocation);
         if (!locationcoordinates) {
             return res.status(400).json({
                 success: false,
@@ -85,7 +86,7 @@ exports.postRequirement = async (req, res) => {
             quantity:quantity,
             location:{
                 type:"Point",
-                address:location,
+                address:finalLocation,
                 coordinates:[longi, lati]
             },
             expectedDeliveryDate:deliveryDate,

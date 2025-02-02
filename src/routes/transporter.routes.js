@@ -6,7 +6,7 @@ const {getReviews} = require('../controllers/RatingReviewOperations.js')
 const {getRequest} = require('../controllers/transporter.controller.js')
 
 
-router.get('/getinfo',getRequest);
+router.post('/getinfo',getRequest);
 // router.get('/getreviews', getReviews);
 router.post('/confirmRequest',requstStatusfunction);
 

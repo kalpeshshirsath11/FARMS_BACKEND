@@ -3,15 +3,89 @@ const mongoose = require('mongoose');
 const requstStatus = require('../models/RequestStatus.model.js');
 const Transporter = require("../models/TransportRequirements.js");
 const client = require("../utils/twilioClient.js");
-const User = require("../models/User.js")
+const User = require("../models/User.js");
+const { getCoordinates } = require("../services/geocodingService.js");
 
-const getRequest  = async(req,res)=>{
-    //get all farmers who want to being transported
-    
-    const FarmerData = await Transporter.find({});
-    console.log(FarmerData);
-    return res.status(200).json(FarmerData);
-}
+const findNearbyTransportRequirements = async (longitude, latitude, maxDistanceKm) => {
+    try {
+        const maxDistanceMeters = maxDistanceKm * 1000; // Convert km to meters
+
+        const results = await Transporter.aggregate([
+            {
+                $geoNear: {
+                    near: {
+                        type: "Point",
+                        coordinates: [longitude, latitude],
+                    },
+                    distanceField: "distance",
+                    maxDistance: maxDistanceMeters, // Maximum distance in meters
+                    spherical: true,
+                    key: "Departlocations.coordinates", // Ensure Departlocations is indexed properly
+                }
+            },
+            
+            
+            {
+                $sort: { distance: 1 } // Sort by nearest first
+            }
+        ]);
+
+        console.log(results);
+        return results;
+    } catch (error) {
+        console.error("Error finding transport requirements:", error);
+    }
+};
+
+  
+const getRequest = async (req, res) => {
+    try {
+        const { location, maxDistance} = req.body;
+
+        // Validate input
+        if (!location || !maxDistance ) {
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required",
+            });
+        }
+
+        // Convert location to coordinates
+        const locationCords = await getCoordinates(location);
+        if (!locationCords || !locationCords.lat || !locationCords.lon) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid location",
+            });
+        }
+
+        // Find nearby transport requirements
+        const data = await findNearbyTransportRequirements(
+            locationCords.lon, // GeoJSON expects [longitude, latitude]
+            locationCords.lat,
+            maxDistance
+        );
+
+        if (!data) {
+            return res.status(500).json({
+                success: false,
+                message: "Error fetching data",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Data retrieved successfully",
+            data: data,
+        });
+    } catch (error) {
+        console.error("Error in getRequest:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
 
 const requstStatusfunction = async (req, res) => {
     try {

@@ -5,8 +5,7 @@ const Otp = require("../models/Otp.js")
 const validator = require("validator")
 const {validatePassword} = require("../middlewares/validatePassword.js")
 require("dotenv").config()
-// let otpStore = "";
-let user1 = {};
+
 const client = require("../utils/twilioClient");
 const {  uploadOnCloudinary } = require("../utils/uploadToCloudinary.js");
 
@@ -173,9 +172,14 @@ const loginUser = async(req,res)=>{
         // Send the token in an HTTP-only cookie instead of storing in db
         
 
-        res.cookie("token", token).status(200).json({
+        res.cookie("token", token,{
+            httpOnly:true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax"
+        }).status(200).json({
             success: true,
             token,
+            accountType:user.accountType,
             message: "Logged in successfully",
         });
         
@@ -190,8 +194,12 @@ const loginUser = async(req,res)=>{
 
 const logoutUser = (req, res) => {
     return res
+        .clearCookie("token", {
+            httpOnly: true,
+            
+            sameSite: "lax",
+        })
         .status(200)
-        .clearCookie("token") //Clear cookie from client's browser
         .json({ message: "Logged out successfully" });
 };
 
@@ -262,5 +270,11 @@ const changePassword = async (req, res) => {
 };
 
 
+const isLogIn = (req,res)=>{
+    if (req.cookies.token) {
+        return res.json({ isLoggedIn: true });
+      }
+      return res.json({ isLoggedIn: false });
 
-module.exports = { signUpUser, verifyOtp, loginUser,logoutUser, changePassword};
+}
+module.exports = { signUpUser, verifyOtp, loginUser,logoutUser, changePassword,isLogIn};

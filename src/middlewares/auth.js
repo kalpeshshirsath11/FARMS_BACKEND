@@ -8,6 +8,7 @@ exports.authorize = (req, res, next) => {
         const token = req.cookies.token 
        
         if(!token || token === undefined){
+            console.log("err4")
             return res.status(401).json({
                 success:false,
                 message:"Token missing"
@@ -77,6 +78,7 @@ exports.isRetailer = (req, res, next) => {
 exports.isTransporter = (req, res, next) => {
     try{
         if(req.user.accountType !== "Transporter"){
+            console.log("err")
             return res.status(401).json({
                 success:false,
                 message:"This is a protected route for Transporter  ONLY !"
