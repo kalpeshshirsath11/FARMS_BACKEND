@@ -119,7 +119,7 @@ exports.viewBestDeals = async(req, res) => {
             })
         }
 
-        const matchedDemands = await retailerDemands.find({isFull:false ,crop:crop, cropGrade:cropGrade}).populate('userId', 'averageRating');  
+        const matchedDemands = await retailerDemands.find({isFull:false ,crop:crop, cropGrade:cropGrade}).populate('userId', 'averageRating firstName lastName');  
         if(matchedDemands.length === 0){
             return res.status(404).json({
                 success:false,
@@ -148,13 +148,17 @@ exports.viewBestDeals = async(req, res) => {
                 //temporary - 7rs per km
                 const profitMargin = (priceOffered * quantity) - (distance * 7);
 
+                //Consider vehicle cost +-10% for range of profit margin. 
+
+                console.log("Profit: ", profitMargin);
+
                 const dealScore = parseFloat(
                     (k1 * profitMargin - k2 * distance + k3 * retailerRating).toFixed(2)
                 );
 
 
                 //Return an object for every demand. Array of objects will be created.
-                return { demand, dealScore };
+                return { demand, dealScore, profitMargin };
             })
         );
         
@@ -220,7 +224,7 @@ exports.viewBestDealsInRange = async (req, res) => {
         }
 
 
-        const matchedDemands = await retailerDemands.find({isFull:false ,crop:crop, cropGrade:cropGrade}).populate('userId', 'averageRating');
+        const matchedDemands = await retailerDemands.find({isFull:false ,crop:crop, cropGrade:cropGrade}).populate('userId', 'averageRating firstName lastName');
 
 
         if(matchedDemands.length === 0){
@@ -255,7 +259,7 @@ exports.viewBestDealsInRange = async (req, res) => {
 
 
                 //Return an object for every demand. Array of objects will be created.
-                return { demand, dealScore };
+                return { demand, dealScore, profitMargin };
             })
         );
 
