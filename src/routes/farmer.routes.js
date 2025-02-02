@@ -25,7 +25,7 @@ router.get('/getNotify',getNotifications);
 
 
 router.post('/poststock',upload.single("cropImage"),postStock);
-router.post('/viewbestdeals', viewBestDeals);
+router.post('/  ', viewBestDeals);
 router.post('/viewbestdealsinrange', viewBestDealsInRange);
 router.get('/mystock', viewMyStock);  
 router.post('/requestsupply', requestSupply);

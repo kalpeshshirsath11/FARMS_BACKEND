@@ -8,8 +8,17 @@ const Notification = require('../models/notification.model.js');
 const requestTransport = async (req, res) => {
     try {
         const { departLocation, deliveryLocation, dateOfJourney, quantity } = req.body;
-        const departCords = await getCoordinates(departLocation);
-        const deliveryCords = await getCoordinates(deliveryLocation);
+        if(!departLocation || !deliveryLocation || !dateOfJourney || !quantity){
+          console.log("this is error")
+          return res.status(400).json({
+            success:"false",
+            messege:"this is error"
+          })
+        }
+        const finaldepartLocation = `${departLocation.village} ${departLocation.district} ${departLocation.state}`
+        const finaldeliveryLocation = `${deliveryLocation.village} ${deliveryLocation.district} ${deliveryLocation.state}`
+        const departCords = await getCoordinates(finaldepartLocation);
+        const deliveryCords = await getCoordinates(finaldeliveryLocation);
         if(!departCords || !deliveryCords){
             return res.status(501).json({
                 err:"error in fetching"
@@ -28,17 +37,23 @@ const requestTransport = async (req, res) => {
         const FarmRequest = await TransporterDemand.create({
             FarmerIds: farmerDetails._id,
             Departlocations:{
-                place:departLocation,
+                place:finaldepartLocation,
                 coordinates:[departCords.lat,departCords.lon]
             },
             Destination:{
-                place:deliveryLocation,
+                place:finaldeliveryLocation,
                 coordinates:[deliveryCords.lat,deliveryCords.lon]
             },
             DepatrureDate: new Date(dateOfJourney),
             quantities:quantity,
         });
-
+        if(!FarmRequest){
+          return res.status(500).json({
+            success:"false",
+            messege:"post not updated in database"
+          })
+        }
+        console.log(FarmRequest)
         return res.status(201).json({
             success: true,
             message: "Request submitted successfully.",

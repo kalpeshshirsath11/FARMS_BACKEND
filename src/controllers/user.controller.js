@@ -179,6 +179,7 @@ const loginUser = async(req,res)=>{
         }).status(200).json({
             success: true,
             token,
+            accountType:user.accountType,
             message: "Logged in successfully",
         });
         
@@ -193,8 +194,12 @@ const loginUser = async(req,res)=>{
 
 const logoutUser = (req, res) => {
     return res
+        .clearCookie("token", {
+            httpOnly: true,
+            
+            sameSite: "lax",
+        })
         .status(200)
-        .clearCookie("token") //Clear cookie from client's browser
         .json({ message: "Logged out successfully" });
 };
 
@@ -265,5 +270,11 @@ const changePassword = async (req, res) => {
 };
 
 
+const isLogIn = (req,res)=>{
+    if (req.cookies.token) {
+        return res.json({ isLoggedIn: true });
+      }
+      return res.json({ isLoggedIn: false });
 
-module.exports = { signUpUser, verifyOtp, loginUser,logoutUser, changePassword};
+}
+module.exports = { signUpUser, verifyOtp, loginUser,logoutUser, changePassword,isLogIn};

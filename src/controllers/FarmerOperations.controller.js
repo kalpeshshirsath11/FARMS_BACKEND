@@ -66,7 +66,7 @@ exports.postStock = async (req, res) => {
             message: "Failed to upload crop image to Cloudinary",
         });
     }
-const finalLocation = `${location.village} ${location.district} ${location.state}`
+const finalLocation = `${location.village}, ${location.district}, ${location.state}`
     const locationcoordinates = await getCoordinates(finalLocation);
     if (!locationcoordinates) {
       return res.status(400).json({
