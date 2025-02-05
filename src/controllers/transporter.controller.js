@@ -1,12 +1,65 @@
-const  FarmerStock = require("../models/FarmerStock.js")
-const mongoose = require('mongoose');
-const requstStatus = require('../models/RequestStatus.model.js');
+const FarmerStock = require("../models/FarmerStock.js");
+const mongoose = require("mongoose");
+const requstStatus = require("../models/RequestStatus.model.js");
 const Transporter = require("../models/TransportRequirements.js");
 const client = require("../utils/twilioClient.js");
 const User = require("../models/User.js");
 const { getCoordinates } = require("../services/geocodingService.js");
+const TransporterDetailsmodel = require("../models/tranportDetails.model.js")
+const pendingTransporterModel = require("../models/pendingTransporter.model.js")
+//  Fix: Define `findNearbyTransportRequirements` only once
+ // Ensure you import the correct model
 
-const findNearbyTransportRequirements = async (longitude, latitude, maxDistanceKm) => {
+
+ 
+const TransporterDetails = async (req, res) => {
+    try {
+        const TransporterId = req.user._id;
+        const { vehicleType, capacity, isColdStorageAvailable } = req.body;
+
+        // Fix: Ensure all fields are properly validated
+        if (vehicleType === undefined || capacity === undefined || isColdStorageAvailable === undefined) {
+            console.log("er")
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required",
+            });
+        }
+
+        // Fix: Use the correct model name (Transporter)
+        const Details = await TransporterDetailsmodel.create({
+            TransporterId,
+            vehicle: {
+                vehicleType,
+                capacity,   
+                isColdStorageAvailable,
+            },
+        });
+
+        if (!Details) {
+            return res.status(404).json({
+                success: false,
+                message: "Transporter details not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Stored successfully",
+            Details,
+        });
+    } catch (error) {
+        console.error("Error storing transporter details:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+    }
+};
+
+
+
+const findNearbyTransportRequirements = async (longitude, latitude, maxDistanceKm = 40) => {
     try {
         const maxDistanceMeters = maxDistanceKm * 1000; // Convert km to meters
 
@@ -18,65 +71,47 @@ const findNearbyTransportRequirements = async (longitude, latitude, maxDistanceK
                         coordinates: [longitude, latitude],
                     },
                     distanceField: "distance",
-                    maxDistance: maxDistanceMeters, // Maximum distance in meters
+                    maxDistance: maxDistanceMeters,
                     spherical: true,
-                    key: "Departlocations.coordinates", // Ensure Departlocations is indexed properly
+                    key: "Departlocations.0.coordinates" // ✅ Use only first index of the array
                 }
             },
-            
-            
-            {
-                $sort: { distance: 1 } // Sort by nearest first
-            }
+            { $sort: { distance: 1 } } // Sort by nearest first
         ]);
 
-        console.log(results);
-        return results;
+        return results || [];
     } catch (error) {
         console.error("Error finding transport requirements:", error);
+        return [];
     }
 };
 
-  
+//  Fix: `getRequest` function
 const getRequest = async (req, res) => {
     try {
-        const { location, maxDistance} = req.body;
+        // const { location, maxDistance } = req.body;
 
-        // Validate input
-        if (!location || !maxDistance ) {
-            return res.status(400).json({
-                success: false,
-                message: "All fields are required",
-            });
-        }
+        // if (!location || !maxDistance) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: "All fields are required",
+        //     });
+        // }
 
-        // Convert location to coordinates
-        const locationCords = await getCoordinates(location);
-        if (!locationCords || !locationCords.lat || !locationCords.lon) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid location",
-            });
-        }
+        // const locationCords = await getCoordinates(location);
+        // if (!locationCords || !locationCords.lat || !locationCords.lon) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: "Invalid location",
+        //     });
+        // }
 
-        // Find nearby transport requirements
-        const data = await findNearbyTransportRequirements(
-            locationCords.lon, // GeoJSON expects [longitude, latitude]
-            locationCords.lat,
-            maxDistance
-        );
-
-        if (!data) {
-            return res.status(500).json({
-                success: false,
-                message: "Error fetching data",
-            });
-        }
+        const data = await Transporter.find({}).populate('FarmerIds','firstName  lastName contactNumber');
 
         return res.status(200).json({
             success: true,
-            message: "Data retrieved successfully",
-            data: data,
+            message: data.length ? "Data retrieved successfully" : "No nearby transport found",
+            data,
         });
     } catch (error) {
         console.error("Error in getRequest:", error);
@@ -87,11 +122,68 @@ const getRequest = async (req, res) => {
     }
 };
 
+//  Fix: `requstStatusfunction` function
+const sendRequest = async (req, res) => {
+    try {
+        const Transporterid = req.user._id;
+        const requirementId = req.query.requirementId;
+
+        if (!requirementId || !mongoose.Types.ObjectId.isValid(requirementId)) {
+                return res.status(400).json({
+                  success: false,
+                  message: "Invalid or missing transport requirement ID.",
+                });
+              }
+
+        // Fix: Fetching requirement from the correct model
+        const requirementDetails = await Transporter.findById(requirementId);
+
+        if (!requirementDetails) {
+            return res.status(400).json({
+                success: false,
+                message: "Requirement not found",
+            });
+        }
+
+        // Fix: Correct field names and object structure
+        const pendingRequest = await pendingTransporterModel.create({
+            Transporterid,
+            Farmerid: requirementDetails.FarmerIds,
+            Departlocation: requirementDetails.Departlocations,
+            Destination: requirementDetails.Destination,
+            DepatrureDate: requirementDetails.DepatrureDate, // Fixed typo
+            quantities: requirementDetails.quantities,
+            contactNumber: requirementDetails.contactNumber, // Fixed typo
+        });
+
+        if (!pendingRequest) {
+            return res.status(400).json({
+                success: false,
+                message: "Error in uploading request",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Request sent successfully",
+            pendingRequest,
+        });
+
+    } catch (error) {
+        console.error("Error in sendRequest:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+    }
+};
+
+
+
 const requstStatusfunction = async (req, res) => {
     try {
         const _transportRequirementId = req.query.transportrequirementid;
-        
-        // Check if transport requirement ID is provided and valid
+
         if (!_transportRequirementId || !mongoose.Types.ObjectId.isValid(_transportRequirementId)) {
             return res.status(400).json({
                 success: false,
@@ -99,7 +191,6 @@ const requstStatusfunction = async (req, res) => {
             });
         }
 
-        // Fetch transport requirement details
         const requirement = await Transporter.findById(_transportRequirementId);
         if (!requirement) {
             return res.status(404).json({
@@ -108,8 +199,7 @@ const requstStatusfunction = async (req, res) => {
             });
         }
 
-        // Ensure user (transporter) is logged in
-        const _transporterId = req.user._id; // Assuming you're using authentication middleware that sets req.user
+        const _transporterId = req.user._id;
         if (!_transporterId) {
             return res.status(401).json({
                 success: false,
@@ -117,7 +207,6 @@ const requstStatusfunction = async (req, res) => {
             });
         }
 
-        // Fetch transporter and farmer details
         const transporter = await User.findById(_transporterId);
         const _farmerId = requirement.FarmerIds;
         const farmer = await User.findById(_farmerId);
@@ -132,7 +221,6 @@ const requstStatusfunction = async (req, res) => {
         const farmerContact = farmer.contactNumber;
         const transporterContact = transporter.contactNumber;
 
-        // Check if departLocation and deliveryLocation are valid
         const depart = requirement.Departlocations;
         const dest = requirement.Destination;
 
@@ -143,19 +231,17 @@ const requstStatusfunction = async (req, res) => {
             });
         }
 
-        // Create acceptance deal
         const acceptance = await requstStatus.create({
             Transporterid: _transporterId,
             Farmerid: _farmerId,
-            Departlocation:depart,
-            Destination:dest,
+            Departlocation: depart,
+            Destination: dest,
             DepatrureDate: requirement.DepatrureDate,
             quantity: requirement.quantities,
         });
 
         await Transporter.deleteOne({ _id: _transportRequirementId });
 
-        // Send SMS notifications using Twilio
         try {
             await client.messages.create({
                 from: process.env.TWILIO_PHONE_NUMBER,
@@ -180,7 +266,6 @@ You can contact the transporter through the app.`,
             });
         }
 
-        // Successful response
         return res.status(200).json({
             success: true,
             message: "Deal is accomplished.",
@@ -194,14 +279,58 @@ You can contact the transporter through the app.`,
         });
     }
 };
+const getPendingreq = async (req, res) => {
+    try {
+        const myId = req.user._id;
+        const requests = await pendingTransporterModel.find({ Transporterid: myId, completionFlag: false });
+
+        if (requests.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No pending requests found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: requests,
+        });
+
+    } catch (error) {
+        console.error("Error fetching pending requests:", error.message);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+const getAcceptedRequest = async(req,res)=>{
+    try {
+        const myId = req.user._id;
+        const requests = await pendingTransporterModel.find({ Transporterid: myId, completionFlag: true }).populate('Farmerid','firstName lastName contactNumber');
+
+        if (requests.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "no accepted request found requests found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: requests,
+        });
+
+    } catch (error) {
+        console.error("Error fetching pending requests:", error.message);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+}
 
 
 
-
-
-
-
-
-
-
-module.exports = { getRequest, requstStatusfunction };
+//  Fix: Export correctly
+module.exports = { getRequest, requstStatusfunction,getPendingreq ,TransporterDetails,sendRequest,getAcceptedRequest};

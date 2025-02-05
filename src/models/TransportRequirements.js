@@ -1,36 +1,17 @@
-const mongoose = require("mongoose")
-const User = require("./User.js")
-
+const mongoose = require("mongoose");
+const User = require("../models/User.js")
 const transportRequirementSchema = new mongoose.Schema(
   {
-    FarmerIds: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-      },
-    ],
-    Departlocations: [
-      {
-        type: {
-          type: String,
-          enum: ["Point"], // GeoJSON type must be "Point"
-          default: "Point",
-        },
-        place: {
-          type: String,
-          required: true,
-        },
-        coordinates: {
-          type: [Number], // Array of numbers: [longitude, latitude]
-          required: true,
-        },
-      },
-    ],
-    Destination: {
+    FarmerIds: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    Departlocations: {
       type: {
         type: String,
-        enum: ["Point"], // GeoJSON type must be "Point"
+        enum: ["Point"],
         default: "Point",
       },
       place: {
@@ -38,34 +19,49 @@ const transportRequirementSchema = new mongoose.Schema(
         required: true,
       },
       coordinates: {
-        type: [Number], // Array of numbers: [longitude, latitude]
+        type: [Number], // Longitude, Latitude
         required: true,
       },
     },
+
+    Destination: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      place: {
+        type: String,
+        required: true,
+      },
+      coordinates: {
+        type: [Number],
+        required: true,
+      },
+    },
+
     DepatrureDate: {
       type: Date,
       required: true,
       default: Date.now,
     },
-    quantities: [
-      {
-        type: Number,
-        required: true,
-      },
-    ],
-    contactNumber:[{
-    type:String,
-    required:true
-    }]
 
+    quantities: {
+      type: Number,
+      required: true,
+    },
+
+    contactNumber: {
+      type: String,
+      // required: true,
+    },
   },
-
   {
-    timestamps: true, // Adds createdAt and updatedAt fields automatically
-    expireAfterSeconds: 500, // Expires 500 seconds after creation
+    timestamps: true,
   }
 );
+
+// ✅ Create a geospatial index on Departlocations
 transportRequirementSchema.index({ "Departlocations.coordinates": "2dsphere" });
 
-
-module.exports = mongoose.model("Transporterrequirement", transportRequirementSchema);
+module.exports = mongoose.model("TransporterRequirement", transportRequirementSchema);
