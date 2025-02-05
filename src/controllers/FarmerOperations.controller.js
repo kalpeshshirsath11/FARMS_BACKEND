@@ -837,8 +837,8 @@ exports.viewFarmerNotifications = async (req, res) => {
 
 exports.viewMyStock = async (req, res) => {
     try {
-        const {farmerId} = req.query;  //Farmer is logged in, so we can get _id from payload
-
+          //Farmer is logged in, so we can get _id from payload
+        const farmerId = req.user._id;
         const myStock = await FarmerStock.find({ userId: farmerId }).sort({createdAt: -1});  //newest first
 
         if (!myStock || myStock.length === 0) {

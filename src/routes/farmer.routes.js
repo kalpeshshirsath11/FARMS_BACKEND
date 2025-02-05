@@ -2,7 +2,7 @@ const express = require("express")
 const {upload} = require("../middlewares/multer.middleware.js")
 const router = express.Router();
 // const {postStock} = require('../controllers/PostStock.controller.js')?
-const {requestTransport,tranportReqfarmer,reqFarmer,getNotifications, acceptRequest} = require('../controllers/FarmerTransport.controller.js')
+const {requestTransport,tranportReqfarmer,reqFarmer,getNotifications, acceptRequest,myRequestFeed,acceptRequestTransporter} = require('../controllers/FarmerTransport.controller.js')
 // const {postStock} = require('../controllers/PostStock.controller.js')
 // const { upload }= require('../middlewares/multer.middleware.js')
 const {postStock} = require('../controllers/FarmerOperations.controller.js')
@@ -18,6 +18,8 @@ const {deleteNotification} = require("../controllers/RetailerOperations.controll
 const {execCron} = require("../controllers/FarmerOperations.controller.js")
 
 // router.post('/poststock',upload.single("cropImage"),postStock);
+router.get('/farmFeed',myRequestFeed);
+router.get('/accepttransportRequest',acceptRequestTransporter);
 router.post('/reqtransporter',requestTransport);
 router.get('/farmerRequest',tranportReqfarmer);
 router.post('/acceptInvite',acceptRequest)

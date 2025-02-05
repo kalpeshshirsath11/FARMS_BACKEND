@@ -1,9 +1,10 @@
-const TransporterDemand = require('../models/TransportRequirements.js')
+const TransporterDemand = require('../models/TransportRequirements')
 const {getCoordinates} = require('../services/geocodingService.js')
 const FarmerStock = require("../models/FarmerStock");
 const mongoose = require('mongoose');
 const client = require('../utils/twilioClient.js');
 const Notification = require('../models/notification.model.js');
+const pendingRequest = require('../models/pendingTransporter.model.js')
 // const TransporterDemand = require('../models/TransportRequirements.model.js')
 const requestTransport = async (req, res) => {
     try {
@@ -359,5 +360,68 @@ const tranportReqfarmer = async (req, res) => {
 };
 
 
+const myRequestFeed = async (req, res) => {
+  try {
+    const farmerId = req.user._id; // Get logged-in farmer's ID
+
+    // Find all transport requests where the given farmerId exists in the FarmerIds array
+    const requests = await TransporterDemand.find({ FarmerIds: { $in: [farmerId] } });
+
+    if (!requests.length) {
+      return res.status(404).json({ message: "No transport requests found for this farmer" });
+    }
+
+    res.status(200).json(requests); 
+  } catch (error) {
+    console.error("Error fetching transport requests:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const acceptRequestTransporter = async (req, res) => {
+  try {
+      const FarmerId = req.user._id;
+      const transporterRequestId = req.query.transporterRequestId;
+
+      // Validate transporterRequestId
+      if (!transporterRequestId || !mongoose.Types.ObjectId.isValid(transporterRequestId)) {
+          return res.status(400).json({
+              success: false,
+              message: "Invalid or missing pending request ID.",
+          });
+      }
+
+      // Update request status
+      const acceptance = await pendingRequest.findByIdAndUpdate(
+          transporterRequestId,
+          { completionFlag: true },
+          { new: true } // Ensure the updated document is returned
+      );
+
+      if (!acceptance) {
+          return res.status(404).json({
+              success: false,
+              message: "Pending request not found.",
+          });
+      }
+
+      return res.status(200).json({
+          success: true,
+          message: "Request accepted successfully.",
+          acceptance,
+      });
+
+  } catch (error) {
+      console.error("Error accepting request:", error);
+      return res.status(500).json({
+          success: false,
+          message: "Internal Server Error",
+      });
+  }
+};
+
+
+
+
   
-module.exports = {requestTransport,tranportReqfarmer,reqFarmer,getNotifications,acceptRequest}
+module.exports = {requestTransport,tranportReqfarmer,reqFarmer,getNotifications,acceptRequest,myRequestFeed,acceptRequestTransporter}
