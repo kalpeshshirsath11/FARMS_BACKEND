@@ -12,6 +12,7 @@ const transportRoute = require('./routes/transporter.routes.js')
 const {authorize, isFarmer, isRetailer, isTransporter} = require("./middlewares/auth.js")
 const cors = require("cors")
 
+require("./utils/lockDealsCron.js");   //schedule cron-job when server starts
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
