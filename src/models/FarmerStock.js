@@ -20,6 +20,10 @@ const farmerStockSchema = new mongoose.Schema({
         type:Number,
         required:true,
     },
+    minExpectedPrice:{
+        type:Number,
+        required:true
+    },
     image: {
         type: String,
         required: true,
@@ -39,7 +43,7 @@ const farmerStockSchema = new mongoose.Schema({
           required: true
       },
     },
-    accepted:{
+    isFull:{
         type:Boolean,
         default:false
     },
@@ -53,9 +57,27 @@ const farmerStockSchema = new mongoose.Schema({
             ref:"Retailer"  //retailer requirement
         }
     ],
-    confirmedRetailer:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"Retailer"  //retailer requirement
+    //confirmed
+    shopbuyers:[
+        {
+            type:mongoose.Schema.Types.ObjectId,
+            ref:"Retailer"  //retailer requirement
+        }
+    ],
+    //confirmed
+    directbuyers:[
+        {
+            type:mongoose.Schema.Types.ObjectId,
+            ref:"ConsumerRequirements"  //retailer requirement
+        }
+    ],
+    // confirmedRetailer:{
+    //     type:mongoose.Schema.Types.ObjectId,
+    //     ref:"Retailer"  //retailer requirement
+    // },
+    sold:{
+        type:Boolean,
+        default:false
     }
 },
 {

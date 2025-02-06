@@ -8,12 +8,12 @@ const notificationSchema = new mongoose.Schema({
     stockID:{
         type:mongoose.Schema.Types.ObjectId,
         ref:"FarmerStock",
-        required:true
+        // required:true
     },
     requirementId:{
         type:mongoose.Schema.Types.ObjectId,
         ref:"Retailer",
-        required:true
+        // required:true
     }
    
 })

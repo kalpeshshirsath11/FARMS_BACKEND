@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-const RetailerRequirements = require("../models/RetailerRequirements")
-const {getCoordinates} = require("../services/geocodingService.js")
+// const RetailerRequirements = require("../models/RetailerRequirements")
+const { getCoordinates } = require("../services/geocodingService.js")
 const FarmerStock = require('../models/FarmerStock.js');
 const retailerDemands = require("../models/RetailerRequirements.js");
 const UserNotifications = require("../models/UserNotifications.js");
@@ -11,746 +11,812 @@ require("dotenv").config()
 const validator = require("validator");
 
 
-exports.postRequirement = async (req, res) => {    
-    try{
-        const {crop, cropgrade, quantity, price, location, expectedDeliveryDate, contactNumber} = req.body;
+// exports.postRequirement = async (req, res) => {    
+//     try{
+//         const {crop, cropgrade, quantity, price, location, expectedDeliveryDate, contactNumber} = req.body;
+//         const retailerID = req.user._id;
+
+//         if(!crop || !cropgrade || !quantity || !price || !location || !contactNumber){
+//             return res.status(400).json({
+//                 success:false,
+//                 message:"All fields are required for posting crop requirements."
+//             })
+//         }
+//         const finalLocation = `${location.village} ${location.district} ${location.state}`;
+//         if (!expectedDeliveryDate || isNaN(new Date(expectedDeliveryDate))) {
+//             console.log("here is error")
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "A valid expected delivery date is required.",
+//             });
+//         }
+
+//         const deliveryDate = new Date(expectedDeliveryDate);
+//         // console.log(deliveryDate);
+
+//         if (deliveryDate < new Date()) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Expected delivery date cannot be in the past.",
+//             });
+//         }
+
+
+
+//         if (!validator.isMobilePhone(contactNumber, 'any')) {
+//             return res.status(400).json({ error: "Invalid contact number" });
+//         }
+
+
+//         if(quantity <= 0){
+//             return res.status(400).json({
+//                 success:false,
+//                 message:"Quantity cannot be negative or zero."
+//             })
+//         }
+
+//         if (price <= 0) {
+//             return res.status(400).json({
+//               success: false,
+//               message: "Price per quintal must be a positive value.",
+//             });
+//           }
+
+
+
+//         const locationcoordinates = await getCoordinates(finalLocation);
+//         if (!locationcoordinates) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Invalid location. Unable to retrieve coordinates.",
+//             });
+//         }
+//         const longi = locationcoordinates.lon;
+//         const lati = locationcoordinates.lat;
+//         // console.log(locationcoordinates);
+
+
+
+
+//         const newRequirement = await RetailerRequirements.create({
+//             userId:retailerID,
+//             crop:crop,
+//             cropGrade:cropgrade,
+//             pricePerQuintal:price,
+//             quantity:quantity,
+//             location:{
+//                 type:"Point",
+//                 address:finalLocation,
+//                 coordinates:[longi, lati]
+//             },
+//             expectedDeliveryDate:deliveryDate,
+//             pendingRequests:[]
+//         });
+
+//         return res.status(200).json({
+//             success:true,
+//             message:"Your crop requirement has been posted successfully.",
+//             newRequirement
+//         })        
+//     }
+//     catch(error){
+//         console.error(error);
+//         return res.status(500).json({
+//             success:false,
+//             message:"An error occured while posting stock requirement."
+//         })
+//     }
+// }
+
+exports.postRequirement = async (req, res) => {
+    try {
+        //Also take apartment and areaName, but use only city district and state for coordinates
+        const { crop, cropGrade, quantity, price, location, expectedDeliveryDate, contactNumber } = req.body;
         const retailerID = req.user._id;
 
-        if(!crop || !cropgrade || !quantity || !price || !location || !contactNumber){
-            return res.status(400).json({
-                success:false,
-                message:"All fields are required for posting crop requirements."
-            })
+        if (!crop || !cropGrade || !quantity || !price || !location || !contactNumber) {
+            return res.status(400).json({ success: false, message: "All fields are required for posting crop requirements." });
         }
-        const finalLocation = `${location.village} ${location.district} ${location.state}`;
+
+        const finalLocation = `${location.city}, ${location.district}, ${location.state}`;
+        // console.log(finalLocation);
         if (!expectedDeliveryDate || isNaN(new Date(expectedDeliveryDate))) {
-            console.log("here is error")
-            return res.status(400).json({
-                success: false,
-                message: "A valid expected delivery date is required.",
-            });
+            return res.status(400).json({ success: false, message: "A valid expected delivery date is required." });
         }
-        
+
         const deliveryDate = new Date(expectedDeliveryDate);
-        // console.log(deliveryDate);
-        
         if (deliveryDate < new Date()) {
-            return res.status(400).json({
-                success: false,
-                message: "Expected delivery date cannot be in the past.",
-            });
+            return res.status(400).json({ success: false, message: "Expected delivery date cannot be in the past." });
         }
 
-        
-
-        if (!validator.isMobilePhone(contactNumber, 'any')) {
-            return res.status(400).json({ error: "Invalid contact number" });
+        if (quantity <= 0 || price <= 0) {
+            return res.status(400).json({ success: false, message: "Quantity and price per quintal must be positive values." });
         }
 
-
-        if(quantity <= 0){
-            return res.status(400).json({
-                success:false,
-                message:"Quantity cannot be negative or zero."
-            })
+        const locationCoordinates = await getCoordinates(finalLocation);
+        if (!locationCoordinates) {
+            return res.status(400).json({ success: false, message: "Invalid location. Unable to retrieve coordinates." });
         }
+        const [longi, lati] = [locationCoordinates.lon, locationCoordinates.lat];
 
-        if (price <= 0) {
-            return res.status(400).json({
-              success: false,
-              message: "Price per quintal must be a positive value.",
-            });
-          }
-
-          
-
-        const locationcoordinates = await getCoordinates(finalLocation);
-        if (!locationcoordinates) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid location. Unable to retrieve coordinates.",
-            });
-        }
-        const longi = locationcoordinates.lon;
-        const lati = locationcoordinates.lat;
-        // console.log(locationcoordinates);
-
-        
-        
-
-        const newRequirement = await RetailerRequirements.create({
-            userId:retailerID,
-            crop:crop,
-            cropGrade:cropgrade,
-            pricePerQuintal:price,
-            quantity:quantity,
-            location:{
-                type:"Point",
-                address:finalLocation,
-                coordinates:[longi, lati]
-            },
-            expectedDeliveryDate:deliveryDate,
-            suppliers:[],
-            pendingRequests:[]
+        let existingGroup = await retailerDemands.findOne({
+            crop,
+            cropGrade,
+            expectedDeliveryDate,
+            locked:false,
+            location: {
+                $near: {
+                    $geometry: { type: "Point", coordinates: [longi, lati] },
+                    $maxDistance: 5000
+                }
+            }
         });
 
-        return res.status(200).json({
-            success:true,
-            message:"Your crop requirement has been posted successfully.",
-            newRequirement
-        })        
-    }
-    catch(error){
+        let groupId = existingGroup ? existingGroup.groupId : new mongoose.Types.ObjectId();
+
+        const displayAddress = `${location.areaName}, ${location.city}, ${location.district}, ${location.state}`;
+
+        const newRequirement = await retailerDemands.create({
+            userId: retailerID,
+            crop,
+            cropGrade,
+            pricePerQuintal: price,
+            quantity,
+            location: {
+                type: "Point",
+                address: displayAddress,
+                landmark:location.landmark,
+                coordinates: [longi, lati]
+            },
+            expectedDeliveryDate: deliveryDate,
+            groupId,
+            pendingRequests: [],
+            locked:false
+        });
+
+        return res.status(200).json({ success: true, message: "Requirement posted successfully.", newRequirement });
+    } catch (error) {
         console.error(error);
-        return res.status(500).json({
-            success:false,
-            message:"An error occured while posting stock requirement."
-        })
+        return res.status(500).json({ success: false, message: "Error posting stock requirement." });
     }
-}
+};
 
 exports.viewNotifications = async (req, res) => {
-    try{
+    try {
 
-        const {myId} = req.query;  //get it from payload
+        const { myId } = req.query;  //get it from payload
 
-        const allNotifications = await UserNotifications.find({userId: myId}).populate('notification');
+        const allNotifications = await UserNotifications.find({ userId: myId }).populate('notification');
 
-        if(!allNotifications || allNotifications.length === 0){
+        if (!allNotifications || allNotifications.length === 0) {
             return res.status(200).json({
-                success:true,
-                message:"No notifications pending."
+                success: true,
+                message: "No notifications pending."
             })
         }
-        
+
         return res.status(200).json({
-            success:true,
-            message:"Retailer notifications fetched successfully.",
+            success: true,
+            message: "Retailer notifications fetched successfully.",
             allNotifications
         })
 
-    } catch(error){
+    } catch (error) {
         console.error(error);
         return res.status(500).json({
-            success:false,
-            message:"Error in fetching retailer notifications."
+            success: false,
+            message: "Error in fetching retailer notifications."
         })
     }
 }
 
 
-exports.acceptSupplyRequest = async (req, res) => {
-    try{        
-        
-        const {notificationId} = req.query;  //When retailer clicks in the "View Details" button in the notification, extract the notificationId from there       
-        if (!notificationId) {
-            return res.status(400).json({
-                success: false,
-                message: "Notification ID is missing.",
-            });
-        } 
+// exports.acceptSupplyRequest = async (req, res) => {
+//     try {
+
+//         const { notificationId } = req.query;  //When retailer clicks in the "View Details" button in the notification, extract the notificationId from there       
+//         if (!notificationId) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Notification ID is missing.",
+//             });
+//         }
+
+//         const notification = await Notifications.findById(notificationId).select('stockID requirementId');
+
+//         if (!notification) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Notification not found.",
+//             });
+//         }
 
 
-        // const notification = await Notifications.findById(notificationId)
-        // .populate(['stockID', 'requirementId']);
-        const notification = await Notifications.findById(notificationId).select('stockID requirementId');
-      
-        if (!notification) {
-            return res.status(404).json({
-                success: false,
-                message: "Notification not found.",
-            });
-        }
+//         const retailerRequirementId = notification.requirementId.toString();
+//         const farmerStockId = notification.stockID.toString();
 
-        // console.log(notification);
-     
-        const retailerRequirementId = notification.requirementId.toString(); 
-        const farmerStockId = notification.stockID.toString(); 
+//         // console.log(retailerRequirementId);
+//         // console.log(farmerStockId);
 
-        // console.log(retailerRequirementId);
-        // console.log(farmerStockId);
+//         const farmerStock = await FarmerStock.findById(farmerStockId).populate('userId', 'contactNumber');
+//         if (!farmerStock) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Farmer stock not found.",
+//             });
+//         }
 
-        const farmerStock = await FarmerStock.findById(farmerStockId);
-        if (!farmerStock) {
-            return res.status(404).json({
-                success: false,
-                message: "Farmer stock not found.",
-            });
-        }
+//         if (farmerStock.isFull === true) {
+//             await Notifications.findByIdAndDelete(notificationId);
 
-        
-        const retailerRequirement = await retailerDemands.findById(retailerRequirementId);
-        if (!retailerRequirement) {
-            return res.status(404).json({
-                success: false,
-                message: "Retailer requirement not found.",
-            });
-        }
+//             const updatedRetailerRequirement = await retailerDemands.findByIdAndUpdate(
+//                 retailerRequirementId,
+//                 {
+//                     $pull: {
+//                         pendingRequests: farmerStockId
+//                     }
+//                 },
+//                 { new: true }
+//             )
 
-        if(farmerStock.accepted === true){
-            await Notifications.findByIdAndDelete(notificationId);
-            
-            const updatedRetailerRequirement = await retailerDemands.findByIdAndUpdate(
-                retailerRequirementId,
-                {
-                    $pull:{
-                        pendingRequests:farmerStockId
-                    }
-                },
-                {new:true}
-            )
-
-            return res.status(200).json({
-                success:false,
-                message:"This stock is already accepted by another retailer."
-            })
-        }
-
-        if(farmerStock.quantity > retailerRequirement.quantity) {
-            return res.status(400).json({
-                success: false,
-                message: "Farmer stock quantity exceeds retailer's requirement.",
-            });
-        }
-
-        const updatedquantity = retailerRequirement.quantity - farmerStock.quantity;
-
-        let updateFields = {
-            $inc: { quantity: -farmerStock.quantity },  //increment
-            $push: { suppliers: farmerStockId },
-            $pull:{pendingRequests: farmerStockId}
-        };
-        
-        if (updatedquantity <= 0) {
-            updateFields.isFull = true; 
-        }
-        
-        let updatedRetailerRequirement;
-        const session = await mongoose.startSession();
-        session.startTransaction();
-        try {
-            updatedRetailerRequirement = await retailerDemands.findOneAndUpdate(
-                {_id:retailerRequirementId}, 
-                updateFields,
-                { new: true, session }
-            );
-
-            if (!updatedRetailerRequirement) {
-                throw new Error("Failed to update retailer requirement.");
-            }
-
-            await Notifications.findByIdAndDelete(notificationId, { session });
-
-            const farmerId = farmerStock.userId;
-            const farmer = await User.findById(farmerId).select('contactNumber');
-            if (!farmer) {
-                throw new Error("Farmer not found.")
-            }
-            const farmerContactNumber = farmer.contactNumber;
-
-            const retailerId = updatedRetailerRequirement.userId;
-            const retailer = await User.findById(retailerId).select('firstName lastName');
-            if (!retailer) {
-                throw new Error("Retailer not found.")
-            }
-            
-
-            const {crop, quantity} = farmerStock;
-            const {firstName, lastName} = retailer;
-            const {expectedDeliveryDate} = updatedRetailerRequirement;
-
-            if (!expectedDeliveryDate || new Date(expectedDeliveryDate) < new Date()) {
-                throw new Error("Expected delivery date is invalid or in the past.")
-            }
-
-            try {
-                await client.messages.create({
-                    from: process.env.TWILIO_PHONE_NUMBER,
-                    to: farmerContactNumber,
-                    body: `Congratulations. Your request for the supply of ${quantity} quintals of ${crop} to ${firstName} ${lastName} has been accepted. Kindly deliver the produce on or before ${expectedDeliveryDate}.`
-                });
-            } catch (twilioError) {
-                console.error("Error sending SMS via Twilio:", twilioError);
-                // throw new Error("Failed to send SMS notification to the farmer.");  //Dont roll back for notification failure
-            }
-
-            farmerStock.accepted = true;
-            try {
-                await farmerStock.save();
-            } catch (saveError) {
-                throw new Error("Failed to update farmer stock status 'accepted'.");
-            }
-
-            await session.commitTransaction();
-
-            return res.status(200).json({
-                success:true,
-                message:"Supply request accepted successfully!",
-                updatedRetailerRequirement
-            }) 
-        } catch (error) {
-            await session.abortTransaction();
-            console.error("Transaction error:", error);
-            return res.status(500).json({
-                success: false,
-                message: "Error in accepting supply request.",
-            });
-        } finally {
-            await session.endSession();
-        }      
-    
-    } catch(error){
-        console.error(error);
-        return res.status(500).json({
-            success: false,
-            message: "Error in accepting supply request.",
-        });
-    }
-}
+//             return res.status(200).json({
+//                 success: false,
+//                 message: "This stock is completely booked. Please look for other deals on the platform"
+//             })
+//         }
 
 
-exports.declineSupplyRequest  = async (req, res) => {
-    try{
+//         let updatedFarmerStock;
+//         const session = await mongoose.startSession();
+//         session.startTransaction();
+//         try {
 
-        const {notificationId} = req.query; 
+//             const updatedRetailerRequirement = await retailerDemands.findOneAndUpdate(
+//                 { _id: retailerRequirementId },
+//                 {
+//                     $pull: {
+//                         pendingRequests: farmerStockId
+//                     },
+//                     $set: { supplier: farmerStockId, accepted: true }
+//                 },
+//                 { new: true, session }
+//             );
 
-        const notification = await Notifications.findById(notificationId);
-        if (!notification) {
-            return res.status(404).json({
-                success: false,
-                message: "Notification not found.",
-            });
-        }
+//             if (!updatedRetailerRequirement) {
+//                 throw new Error("Failed to update retailer requirement.");
+//             }
 
-        const retailerRequirementId = notification.requirementId;
-        const farmerStockId = notification.stockID;
+//             await Notifications.findByIdAndDelete(notificationId, { session });
 
-        let updatedRetailerRequirement;
-        const session = await mongoose.startSession();
-        session.startTransaction();
-        try{
+//             const updatedquantity = Math.max(0, farmerStock.quantity - updatedRetailerRequirement.quantity);
 
-            updatedRetailerRequirement = await retailerDemands.findByIdAndUpdate(
-                retailerRequirementId,
-                {
-                    $pull:{
-                        pendingRequests:farmerStockId
-                    }
-                },
-                {new:true, session}
-            )
+//             let updateFields = {
+//                 $set: { quantity: updatedquantity },
+//                 $push: { shopbuyers: retailerRequirementId },
+//             };
 
-            if(!updatedRetailerRequirement){
-                throw new Error("retailerRequirement not found.")
-            }
+//             if (updatedquantity <= 0) {
+//                 updateFields.$set.isFull = true;
+//             }
 
-            const farmerStock = await FarmerStock.findById(farmerStockId);
-            if(!farmerStock){
-                throw new Error("Farmer stock not found");
-            }
+//             updatedFarmerStock = await FarmerStock.findOneAndUpdate(
+//                 { _id: farmerStockId },
+//                 updateFields,
+//                 { new: true, session }
+//             );
 
-            const farmerId = farmerStock.userId;
-            const farmer = await User.findById(farmerId).select('contactNumber');
-            if(!farmer){
-                throw new Error("Farmer not found");
-            }
-            const {contactNumber} = farmer;
-            const {crop, quantity} = farmerStock;
+//             if (!updatedFarmerStock) {
+//                 throw new Error("Failed to update farmer stock.");
+//             }
 
-            const retailerId = updatedRetailerRequirement.userId;
-            const retailer = await User.findById(retailerId).select('firstName lastName');
-            if (!retailer) {
-                throw new Error("Retailer not found")
-            }
 
-            const {firstName, lastName} = retailer;
+//             const farmerContactNumber = farmer.userId.contactNumber;
 
-            try{
-                await client.messages.create({
-                    from:process.env.TWILIO_PHONE_NUMBER,
-                    to:contactNumber,
-                    body:`Hello. Your request for the supply of ${quantity} quintals of ${crop} has been declined by Retailer ${firstName} ${lastName}. Kindly search for other deals on the platform.`
-                });
-            } catch (twilioError) {
-                console.error("Error sending SMS via Twilio:", twilioError);
-                // throw new Error("Failed to send SMS notification to the farmer.");   //Dont roll back for notification failure
-            }
+//             const retailerId = updatedRetailerRequirement.userId;
+//             const retailer = await User.findById(retailerId).select('firstName lastName');
+//             if (!retailer) {
+//                 throw new Error("Retailer not found.")
+//             }
 
-            await Notifications.findByIdAndDelete(notificationId, { session });
-            await session.commitTransaction();
 
-            return res.status(200).json({
-                success: true,
-                message: "Supply request declined successfully.",
-            });
-        } catch(error){
-            await session.abortTransaction();
-            console.error("Transaction error:", error);
-            return res.status(500).json({
-                success: false,
-                message: "Error in declining supply request.",
-            });
-        } finally{
-            await session.endSession();
-        }
+//             const { crop, quantity } = updatedRetailerRequirement;
+//             const { firstName, lastName } = retailer;
+//             const { expectedDeliveryDate } = updatedRetailerRequirement;
 
-    } catch(error){
-        console.error(error);
-        return res.status(500).json({
-            success: false,
-            message: "Error in declining supply request.",
-        });
-    }
-}
+//             if (!expectedDeliveryDate || new Date(expectedDeliveryDate) < new Date()) {
+//                 throw new Error("Expected delivery date is invalid or in the past.")
+//             }
+
+//             try {
+//                 await client.messages.create({
+//                     from: process.env.TWILIO_PHONE_NUMBER,
+//                     to: farmerContactNumber,
+//                     body: `Congratulations. Your request for the supply of ${quantity} kg of ${crop} to ${firstName} ${lastName} has been accepted. Kindly deliver the produce on or before ${expectedDeliveryDate}.`
+//                 });
+//             } catch (twilioError) {
+//                 console.error("Error sending SMS via Twilio:", twilioError);
+//                 // throw new Error("Failed to send SMS notification to the farmer.");  //Dont roll back for notification failure
+//             }
+
+//             await session.commitTransaction();
+
+//             return res.status(200).json({
+//                 success: true,
+//                 message: "Supply request accepted successfully!",
+//                 updatedFarmerStock
+//             })
+//         } catch (error) {
+//             await session.abortTransaction();
+//             console.error("Transaction error:", error);
+//             return res.status(500).json({
+//                 success: false,
+//                 message: "Error in accepting supply request.",
+//             });
+//         } finally {
+//             await session.endSession();
+//         }
+
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({
+//             success: false,
+//             message: "Error in accepting supply request.",
+//         });
+//     }
+// }
+
+
+// exports.declineSupplyRequest = async (req, res) => {
+//     try {
+
+//         const { notificationId } = req.query;
+//         if (!notificationId) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Notification ID is missing.",
+//             });
+//         }
+
+
+//         const notification = await Notifications.findById(notificationId).populate({
+//             path: 'stockID',
+//             populate: { path: 'userId', select: 'contactNumber' }
+//         });
+
+//         if (!notification) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Notification not found.",
+//             });
+//         }
+
+//         const retailerRequirementId = notification.requirementId;
+//         const farmerStockId = notification.stockID;
+
+//         let updatedRetailerRequirement;
+//         const session = await mongoose.startSession();
+//         session.startTransaction();
+//         try {
+
+//             updatedRetailerRequirement = await retailerDemands.findOneAndUpdate(
+//                 { _id: retailerRequirementId },
+//                 {
+//                     $pull: {
+//                         pendingRequests: farmerStockId
+//                     }
+//                 },
+//                 { new: true, session }
+//             )
+
+//             if (!updatedRetailerRequirement) {
+//                 throw new Error("retailerRequirement not found.")
+//             }
+
+//             const farmerStock = notification.stockID;
+//             if (!farmerStock || !farmerStock.userId) {
+//                 return res.status(404).json({
+//                     success: false,
+//                     message: "Farmer stock or user not found.",
+//                 });
+//             }
+
+//             const contactNumber = farmerStock.userId.contactNumber;
+
+//             const { crop, quantity } = updatedRetailerRequirement;
+
+//             const retailerId = updatedRetailerRequirement.userId;
+//             const retailer = await User.findById(retailerId).select('firstName lastName');
+//             if (!retailer) {
+//                 throw new Error("Retailer not found")
+//             }
+
+//             const { firstName, lastName } = retailer;
+
+//             await Notifications.findByIdAndDelete(notificationId, { session });
+//             await session.commitTransaction();
+
+//             try {
+//                 await client.messages.create({
+//                     from: process.env.TWILIO_PHONE_NUMBER,
+//                     to: contactNumber,
+//                     body: `Hello. Your request for the supply of ${quantity} kg of ${crop} has been declined by Retailer ${firstName} ${lastName}. Kindly search for other deals on the platform.`
+//                 });
+//             } catch (twilioError) {
+//                 console.error("Error sending SMS via Twilio:", twilioError);
+
+//             }
+
+//             return res.status(200).json({
+//                 success: true,
+//                 message: "Supply request declined successfully.",
+//             });
+//         } catch (error) {
+//             await session.abortTransaction();
+//             console.error("Transaction error:", error);
+//             return res.status(500).json({
+//                 success: false,
+//                 message: "Error in declining supply request.",
+//             });
+//         } finally {
+//             await session.endSession();
+//         }
+
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({
+//             success: false,
+//             message: "Error in declining supply request.",
+//         });
+//     }
+// }
 
 
 exports.viewMyOrders = async (req, res) => {
-    try{
+    try {
 
-        const {retailerId} = req.query;  //Retailer is logged in, so we can get _id from payload
+        const { retailerId } = req.query;  //Retailer is logged in, so we can get _id from payload
 
-        const myOrders = await retailerDemands.find({userId: retailerId}).sort({createdAt: -1});
+        const myOrders = await retailerDemands.find({ userId: retailerId }).sort({ createdAt: -1 });
 
-        if(!myOrders || myOrders.length === 0){
+        if (!myOrders || myOrders.length === 0) {
             return res.status(200).json({
-                success:false,
-                message:"No orders posted yet."
+                success: false,
+                message: "No orders posted yet."
             })
         }
 
         return res.status(200).json({
-            success:true,
-            message:"My orders fetched successfully",
+            success: true,
+            message: "My orders fetched successfully",
             myOrders
         })
 
-    } catch(error){
+    } catch (error) {
         console.error(error);
         return res.status(500).json({
-            success:false,
-            message:"Error in fetching retailer orders."
+            success: false,
+            message: "Error in fetching retailer orders."
         })
     }
 }
 
 //When clicked on viewPendingRequests of a particular order in "View my orders"
-exports.viewPendingRequests = async (req, res) => {
-    try{
+// exports.viewPendingRequests = async (req, res) => {
+//     try {
 
-        const {retailerRequirementId} = req.query;
+//         const { retailerRequirementId } = req.query;
 
-        const retailerRequirement = await retailerDemands
-        .findById(retailerRequirementId)
-        .select('pendingRequests');
+//         const retailerRequirement = await retailerDemands
+//             .findById(retailerRequirementId)
+//             .select('pendingRequests');
 
-        if(!retailerRequirement){
-            return res.status(404).json({
-                success:false,
-                message:"Retailer requirement not found for fetching pending requests"
-            })
-        }
+//         if (!retailerRequirement) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Retailer requirement not found for fetching pending requests"
+//             })
+//         }
 
-        const pendingRequests = retailerRequirement.pendingRequests;
-        console.log(pendingRequests);
+//         const pendingRequests = retailerRequirement.pendingRequests;
+//         console.log(pendingRequests);
 
-        if(!pendingRequests || pendingRequests.length === 0){
-            return res.status(200).json({
-                success:false,
-                message:"No pending requests for this order."
-            })
-        }
+//         if (!pendingRequests || pendingRequests.length === 0) {
+//             return res.status(200).json({
+//                 success: false,
+//                 message: "No pending requests for this order."
+//             })
+//         }
 
-        return res.status(200).json({
-            success:true,
-            message:"Pending requests fetched successfully.",
-            pendingRequests
-        })
+//         return res.status(200).json({
+//             success: true,
+//             message: "Pending requests fetched successfully.",
+//             pendingRequests
+//         })
 
-    } catch(error){
-        console.error(error);
-        return res.status(500).json({
-            success:false,
-            message:"Error in fetching pending requests."
-        })
-    }
-}
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({
+//             success: false,
+//             message: "Error in fetching pending requests."
+//         })
+//     }
+// }
 
 
 //When clicked on "View suppliers" of a particular order in "View my orders"
-exports.viewSuppliersOfOrder = async (req, res) => {
-    try{
+exports.viewSupplierOfOrder = async (req, res) => {
+    try {
 
-        const {retailerRequirementId} = req.query;
+        const { retailerRequirementId } = req.query;
 
         const retailerRequirement = await retailerDemands
-        .findById(retailerRequirementId)
-        .select('suppliers')
-        .populate('suppliers');
+            .findById(retailerRequirementId)
+            .select('bestFarmerStockId');
 
-        if(!retailerRequirement){
-            return res.status(404).json({
-                success:false,
-                message:"Retailer requirement not found for fetching suppliers"
-            })
-        }
+            
+            
+            if (!retailerRequirement) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Retailer requirement not found for fetching supplier"
+                })
+            }
+            const farmerStockId = retailerRequirement.bestFarmerStockId;
 
-        const confirmedSuppliers = retailerRequirement.suppliers;
+            if(!farmerStockId){
+                return res.status(200).json({
+                    success:true,
+                    message:"No farmer has been allocated for this order yet."
+                })
+            }
+            
+        const farmerStock = await FarmerStock.findById(farmerStockId).select('userId').populate('userId', 'firstName lastName contactNumber averageRating reliabilityScore')
 
-        if(!confirmedSuppliers || confirmedSuppliers.length === 0){
-            return res.status(200).json({
-                success:false,
-                message:"No suppliers available for this order yet."
-            })
-        }
+        const {firstName, lastName, contactNumber, averageRating, reliabilityScore} = farmerStock.userId;
 
         return res.status(200).json({
-            success:true,
-            message:"Suppliers for this order fetched successfully.",
-            confirmedSuppliers
+            success: true,
+            message: "Supplier for this order fetched successfully.",
+            firstName, lastName, contactNumber, averageRating, reliabilityScore
         })
 
-    } catch(error){
+    } catch (error) {
         console.error(error);
         return res.status(500).json({
-            success:false,
-            message:"Error in fetching suppliers for this order."
+            success: false,
+            message: "Error in fetching suppliers for this order."
         })
     }
 }
 
 
-exports.acceptSupplyRequestFromMyOrders = async (req, res) => {
-    try{
+// exports.acceptSupplyRequestFromMyOrders = async (req, res) => {
+//     try {
 
-        const {farmerStockId, retailerRequirementId} = req.query;
-        
-        if(!farmerStockId || !retailerRequirementId){
-            return res.status(400).json({
-                success:false,
-                message:"Farmer ID or Retailer ID not found."
-            })
-        }
+//         const { farmerStockId, retailerRequirementId } = req.query;
 
-        const farmerStock = await FarmerStock.findById(farmerStockId);
-        if (!farmerStock) {
-            return res.status(404).json({
-                success: false,
-                message: "Farmer stock not found.",
-            });
-        }
-        
-        if(farmerStock.accepted === true){
-            const updatedRetailerRequirement = await retailerDemands.findByIdAndUpdate(
-                retailerRequirementId,
-                {
-                    $pull:{
-                        pendingRequests:farmerStockId
-                    }
-                },
-                {new:true}
-            )
+//         if (!farmerStockId || !retailerRequirementId) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Farmer ID or Retailer ID not found."
+//             })
+//         }
 
-            return res.status(200).json({
-                success:false,
-                message:"This stock is already accepted by another retailer."
-            })
-        }
+//         const farmerStock = await FarmerStock.findById(farmerStockId).populate('userId', 'contactNumber');
+//         if (!farmerStock) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Farmer stock not found.",
+//             });
+//         }
 
-        const session = await mongoose.startSession();
-        session.startTransaction();
-        try{
-            const updatedRetailerRequirement = await retailerDemands.findOneAndUpdate( 
-                {_id: retailerRequirementId},
-                {
-                    $push:{
-                        suppliers:farmerStockId
-                    },
-                    $pull:{
-                        pendingRequests:farmerStockId
-                    },
-                    $inc:{
-                        quantity:-farmerStock.quantity
-                    }
-                },
-                {
-                    new:true,
-                    session
-                }
-            )
+//         if (farmerStock.isFull === true) {
 
-            if(!updatedRetailerRequirement){
-                throw new Error("Error in updating the retailer requirements.")
-            }
+//             const updatedRetailerRequirement = await retailerDemands.findByIdAndUpdate(
+//                 retailerRequirementId,
+//                 {
+//                     $pull: {
+//                         pendingRequests: farmerStockId
+//                     }
+//                 },
+//                 { new: true }
+//             )
 
-            if(updatedRetailerRequirement.quantity <= 0){
-                updatedRetailerRequirement.isFull = true;
-                await updatedRetailerRequirement.save({session});
-            }
+//             return res.status(200).json({
+//                 success: true,
+//                 message: "This stock is completely booked. Please look for other deals on the platform"
+//             })
+//         }
 
-            const farmerId = farmerStock.userId;
-            const farmer = await User.findById(farmerId).select('contactNumber');
-            if (!farmer) {
-                throw new Error("Farmer not found.")
-            }
-            const farmerContactNumber = farmer.contactNumber;
+//         let updatedFarmerStock;
+//         const session = await mongoose.startSession();
+//         session.startTransaction();
+//         try {
+//             const updatedRetailerRequirement = await retailerDemands.findOneAndUpdate(
+//                 { _id: retailerRequirementId },
+//                 {
+//                     $pull: {
+//                         pendingRequests: farmerStockId
+//                     },
+//                     $set: { supplier: farmerStockId, accepted: true }
+//                 },
+//                 { new: true, session }
+//             );
 
-            const retailerId = updatedRetailerRequirement.userId;
-            const retailer = await User.findById(retailerId).select('firstName lastName');
-            if (!retailer) {
-                throw new Error("Retailer not found.")
-            }
-            
+//             if (!updatedRetailerRequirement) {
+//                 throw new Error("Failed to update retailer requirement.");
+//             }
 
-            const {crop, quantity} = farmerStock;
-            const {firstName, lastName} = retailer;
-            const {expectedDeliveryDate} = updatedRetailerRequirement;
+//             const updatedquantity = Math.max(0, farmerStock.quantity - updatedRetailerRequirement.quantity);
 
-            if (!expectedDeliveryDate || new Date(expectedDeliveryDate) < new Date()) {
-                throw new Error("Expected delivery date is invalid or in the past.")
-            }
+//             let updateFields = {
+//                 $set: { quantity: updatedquantity },
+//                 $push: { shopbuyers: retailerRequirementId },
+//             };
 
-            try {
-                await client.messages.create({
-                    from: process.env.TWILIO_PHONE_NUMBER,
-                    to: farmerContactNumber,
-                    body: `Congratulations. Your request for the supply of ${quantity} quintals of ${crop} to ${firstName} ${lastName} has been accepted. Kindly deliver the produce on or before ${expectedDeliveryDate}.`
-                });
-            } catch (twilioError) {
-                console.error("Error sending SMS via Twilio:", twilioError);  //If notification fails, dont roll back, just log the error
-            }
+//             if (updatedquantity <= 0) {
+//                 updateFields.$set.isFull = true;
+//             }
 
-            farmerStock.accepted = true;
-            try {
-                await farmerStock.save({session});
-            } catch (saveError) {
-                throw new Error("Failed to update farmer stock status isFull.");
-            }
+//             updatedFarmerStock = await FarmerStock.findOneAndUpdate(
+//                 { _id: farmerStockId },
+//                 updateFields,
+//                 { new: true, session }
+//             );
+
+//             if (!updatedFarmerStock) {
+//                 throw new Error("Failed to update farmer stock.");
+//             }
+
+//             const farmerContactNumber = farmerStock.userId.contactNumber;
+
+//             const retailerId = updatedRetailerRequirement.userId;
+//             const retailer = await User.findById(retailerId).select('firstName lastName');
+//             if (!retailer) {
+//                 throw new Error("Retailer not found.")
+//             }
 
 
-            await session.commitTransaction();
-            return res.status(200).json({
-                success:true,
-                message:"Farmer stock accepted successfully"
-            })
+//             const { crop, quantity } = updatedRetailerRequirement;
+//             const { firstName, lastName } = retailer;
+//             const { expectedDeliveryDate } = updatedRetailerRequirement;
 
-        } catch(error){
-            await session.abortTransaction();
-            console.error('Transation error',error);
-            return res.status(500).json({
-                success:false,
-                message:"Error in accepting supply request from MY ORDERS."
-            })
-        } finally{
-            await session.endSession();
-        }
+//             if (!expectedDeliveryDate || new Date(expectedDeliveryDate) < new Date()) {
+//                 throw new Error("Expected delivery date is invalid or in the past.")
+//             }
 
-    } catch(error){
-        console.error(error);
-        return res.status(500).json({
-            success:false,
-            message:"Error in accepting supply request from MY ORDERS page"
-        })
-    }
-}
+//             await session.commitTransaction();
 
+//             try {
+//                 await client.messages.create({
+//                     from: process.env.TWILIO_PHONE_NUMBER,
+//                     to: farmerContactNumber,
+//                     body: `Congratulations. Your request for the supply of ${quantity} quintals of ${crop} to ${firstName} ${lastName} has been accepted. Kindly deliver the produce on or before ${expectedDeliveryDate}.`
+//                 });
+//             } catch (twilioError) {
+//                 console.error("Error sending SMS via Twilio:", twilioError);  //If notification fails, dont roll back, just log the error
+//             }
 
-exports.declineSupplyRequestFromMyOrders = async(req, res) => {
-    try{
+//             return res.status(200).json({
+//                 success: true,
+//                 message: "Farmer stock accepted successfully"
+//             })
 
-        const {farmerStockId, retailerRequirementId} = req.query;
+//         } catch (error) {
+//             await session.abortTransaction();
+//             console.error('Transation error', error);
+//             return res.status(500).json({
+//                 success: false,
+//                 message: "Error in accepting supply request from MY ORDERS."
+//             })
+//         } finally {
+//             await session.endSession();
+//         }
 
-        if(!farmerStockId || !retailerRequirementId){
-            return res.status(400).json({
-                success:false,
-                message:"Farmer ID or Retailer ID not found."
-            })
-        }
-
-        const farmerStock = await FarmerStock.findById(farmerStockId);
-        if (!farmerStock) {
-            return res.status(404).json({
-                success: false,
-                message: "Farmer stock not found.",
-            });
-        }
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({
+//             success: false,
+//             message: "Error in accepting supply request from MY ORDERS page"
+//         })
+//     }
+// }
 
 
-        const session = await mongoose.startSession();
-        session.startTransaction();
-        try{
-            const updatedRetailerRequirement = await retailerDemands.findOneAndUpdate( 
-                {_id: retailerRequirementId},
-                { 
-                    $pull:{
-                        pendingRequests:farmerStockId
-                    }
-                },
-                {
-                    new:true,
-                    session
-                }
-            )
+// exports.declineSupplyRequestFromMyOrders = async (req, res) => {
+//     try {
 
-            if(!updatedRetailerRequirement){
-                throw new Error("Error in updating the retailer requirements.")
-            }
+//         const { farmerStockId, retailerRequirementId } = req.query;
 
-            const farmerId = farmerStock.userId;
-            const farmer = await User.findById(farmerId).select('contactNumber');
-            if (!farmer) {
-                throw new Error("Farmer not found.")
-            }
-            const farmerContactNumber = farmer.contactNumber;
+//         if (!farmerStockId || !retailerRequirementId) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Farmer ID or Retailer ID not found."
+//             })
+//         }
 
-            const retailerId = updatedRetailerRequirement.userId;
-            const retailer = await User.findById(retailerId).select('firstName lastName');
-            if (!retailer) {
-                throw new Error("Retailer not found.")
-            }
-            
+//         const farmerStock = await FarmerStock.findById(farmerStockId).populate('userId', 'contactNumber');
+//         if (!farmerStock) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Farmer stock not found.",
+//             });
+//         }
 
-            const {crop, quantity} = farmerStock;
-            const {firstName, lastName} = retailer;
 
-            try {
-                await client.messages.create({
-                    from: process.env.TWILIO_PHONE_NUMBER,
-                    to: farmerContactNumber,
-                    body: `Hello.
-                    Your request for the supply of ${quantity} quintals of ${crop} has been declined by Retailer ${firstName} ${lastName}. Kindly search for other deals on the platform.`
-                });
-            } catch (twilioError) {
-                console.error("Error sending SMS via Twilio:", twilioError);  //If notification fails, dont roll back, just log the error
-            }
+//         const session = await mongoose.startSession();
+//         session.startTransaction();
+//         try {
+//             const updatedRetailerRequirement = await retailerDemands.findOneAndUpdate(
+//                 { _id: retailerRequirementId },
+//                 {
+//                     $pull: {
+//                         pendingRequests: farmerStockId
+//                     }
+//                 },
+//                 {
+//                     new: true,
+//                     session
+//                 }
+//             )
 
-            await session.commitTransaction();
-            return res.status(200).json({
-                success:true,
-                message:"Farmer stock declined successfully"
-            })
+//             if (!updatedRetailerRequirement) {
+//                 throw new Error("Error in updating the retailer requirements.")
+//             }
 
-        } catch(error){
-            await session.abortTransaction();
-            console.error('Transation error',error);
-            return res.status(500).json({
-                success:false,
-                message:"Error in declining the supply request from MY ORDERS page."
-            })
-        } finally{
-            await session.endSession();
-        }
-    } catch(error){
-        console.error(error);
-        return res.status(500).json({
-            success:false,
-            message:"Error in declining the supply request from MY ORDERS page"
-        })
-    }
-}
+//             const farmerContactNumber = farmerStock.userId.contactNumber;
+
+//             const retailerId = updatedRetailerRequirement.userId;
+//             const retailer = await User.findById(retailerId).select('firstName lastName');
+//             if (!retailer) {
+//                 throw new Error("Retailer not found.")
+//             }
+
+
+//             const { crop, quantity } = updatedRetailerRequirement;
+//             const { firstName, lastName } = retailer;
+
+
+//             await session.commitTransaction();
+
+//             try {
+//                 await client.messages.create({
+//                     from: process.env.TWILIO_PHONE_NUMBER,
+//                     to: farmerContactNumber,
+//                     body: `Hello.
+//                     Your request for the supply of ${quantity} quintals of ${crop} has been declined by Retailer ${firstName} ${lastName}. Kindly search for other deals on the platform.`
+//                 });
+//             } catch (twilioError) {
+//                 console.error("Error sending SMS via Twilio:", twilioError);  //If notification fails, dont roll back, just log the error
+//             }
+
+//             return res.status(200).json({
+//                 success: true,
+//                 message: "Farmer stock declined successfully"
+//             })
+
+//         } catch (error) {
+//             await session.abortTransaction();
+//             console.error('Transation error', error);
+//             return res.status(500).json({
+//                 success: false,
+//                 message: "Error in declining the supply request from MY ORDERS page."
+//             })
+//         } finally {
+//             await session.endSession();
+//         }
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({
+//             success: false,
+//             message: "Error in declining the supply request from MY ORDERS page"
+//         })
+//     }
+// }
 
 exports.deleteNotification = async (req, res) => {
     try {
-        const {notificationId} = req.body; // From the "All notifications" page
+        const { notificationId } = req.body; // From the "All notifications" page
         const { myId } = req.query; //user is logged in, so we can get this from payload
 
         if (!notificationId || !myId) {
@@ -799,169 +865,166 @@ exports.deleteNotification = async (req, res) => {
 
 //------------------------------------------------------------------------------------------------
 
-exports.viewBestFarmerOffers = async(req, res) => {
-    try{
-        const {crop, cropgrade, quantity} = req.body; 
-        
-                if(!crop || !cropgrade || !quantity){
-                    return res.status(400).json({
-                        success:false,
-                        message:"To view best offers, crop, cropgrade, quantity, are required fields"
-                    })
-                }
-        
-                const matchedOffers = await FarmerStock.find({accepted:false ,crop:crop, cropGrade:cropgrade}).populate('userId'); 
-                if(matchedOffers.length === 0){
-                    return res.status(404).json({
-                        success:false,
-                        message:"No offers found for the uploaded requirement. Please try again later."
-                    })
-                }
+// exports.viewBestFarmerOffers = async (req, res) => {
+//     try {
+//         const { crop, cropgrade, quantity } = req.body;
 
-                matchedOffers.sort((a, b) => {
-                    const ratingA = a.userId?.averageRating || 0;
-                    const ratingB = b.userId?.averageRating || 0;
-                    return ratingB - ratingA;
-                });
-        
-                return res.status(200).json({
-                    success: true,
-                    message: "Checkout the best offers!",
-                    offers: matchedOffers 
-                });
+//         if (!crop || !cropgrade || !quantity) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "To view best offers, crop, cropgrade, quantity, are required fields"
+//             })
+//         }
 
+//         const matchedOffers = await FarmerStock.find({ isFull: false, crop: crop, cropGrade: cropgrade }).populate('userId');
+//         if (matchedOffers.length === 0) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "No offers found for the uploaded requirement. Please try again later."
+//             })
+//         }
 
-    } catch(error){
-        console.error(error);
-        return res.status(500).json({
-            success:false,
-            message:"Error in fetching the best farmer offers."
-        })
-    }
-}
+//         matchedOffers.sort((a, b) => {
+//             const ratingA = a.userId?.averageRating || 0;
+//             const ratingB = b.userId?.averageRating || 0;
+//             return ratingB - ratingA;
+//         });
+
+//         return res.status(200).json({
+//             success: true,
+//             message: "Checkout the best offers!",
+//             offers: matchedOffers
+//         });
 
 
-exports.requestFarmersCrop = async (req, res) => {
-    try{
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({
+//             success: false,
+//             message: "Error in fetching the best farmer offers."
+//         })
+//     }
+// }
 
-        const { retailerRequirementId} = req.query;
-        if (!retailerRequirementId) {
-            return res.status(400).json({
-                success: false,
-                message: "Retailer requirement Id not found.",
-            });
-        }
 
-        const {farmerstockId} = req.body;
-        if (!farmerstockId) {
-            return res.status(404).json({
-                success: false,
-                message: "farmerstockId not found.",
-            });
-        }
+// exports.requestFarmersCrop = async (req, res) => {
+//     try {
 
-        const farmerStock = await FarmerStock.findById(farmerstockId);
-        // console.log(farmerStock);
-        if (!farmerStock) {
-            return res.status(404).json({
-                success: false,
-                message: "Farmer stock not found.",
-            });
-        }
+//         const { retailerRequirementId } = req.query;
+//         if (!retailerRequirementId) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Retailer requirement Id not found.",
+//             });
+//         }
 
-        if(farmerStock.accepted === true){
-            return res.status(200).json({
-                success:true,
-                message:"This stock has already been ordered by another retailer."
-            })
-        }
+//         const { farmerstockId } = req.body;
+//         if (!farmerstockId) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "farmerstockId not found.",
+//             });
+//         }
 
-        const quantity = farmerStock.quantity;
-        if(!quantity){
-            return res.status(500).json({
-                success:false,
-                message:"Failed to fetch quantity of farmers crop."
-            })
-        }
-        const crop = farmerStock.crop;
-        if(!crop){
-            return res.status(500).json({
-                success:false,
-                message:"Failed to fetch farmers crop."
-            })
-        }
+//         const farmerStock = await FarmerStock.findById(farmerstockId).populate('userId', 'contactNumber firstName lastName');
+//         // console.log(farmerStock);
+//         if (!farmerStock) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Farmer stock not found.",
+//             });
+//         }
 
-        const farmerId = farmerStock.userId;
+//         if (farmerStock.isFull === true) {
+//             return res.status(200).json({
+//                 success: true,
+//                 message: "This stock is completely booked. Please look for other deals on the platform"
+//             })
+//         }
 
-        const newNotif = await Notifications.create({
-            body:`A retailer has requested ${quantity} quintals of your crop ${crop}. Checkout the offer.`,
-            stockID:farmerstockId,
-            requirementId:retailerRequirementId
-        })
+//         const retailerRequirement = await retailerDemands.findById(retailerRequirementId).select('crop quantity');
+//         if (!retailerRequirement) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Retailer requirement not found.",
+//             });
+//         }
 
-        let updatedNotification;
-        const session = await mongoose.startSession();
-        session.startTransaction();
-        try {
-            updatedNotification = await UserNotifications.findOneAndUpdate(
-                { userId: farmerId },
-                { $push: { notification: newNotif._id } },
-                { new: true, upsert: true, session }
-            );
+//         const { quantity, crop } = retailerRequirement;
+//         if (!quantity || !crop) {
+//             return res.status(500).json({
+//                 success: false,
+//                 message: "Failed to fetch quantity or crop."
+//             })
+//         }
 
-            farmerStock.pendingRetailerRequests.push(retailerRequirementId);
-            await farmerStock.save();
+//         const farmerId = farmerStock.userId._id.toString();
 
-            await session.commitTransaction();
-        } catch (error) {
-            await session.abortTransaction();
-            console.error("Error during transaction:", error);
-            return res.status(500).json({
-                success: false,
-                message: "Failed to update farmer notification.",
-            });
-        } finally {
-            session.endSession();
-        }
 
-        const farmer = await User.findById(farmerId).select('contactNumber firstName lastName');
-        if (!farmer) {
-            return res.status(404).json({
-                success: false,
-                message: "Farmer not found.",
-            });
-        }
 
-        const { contactNumber, firstName, lastName } = farmer;
+//         let newNotif, updatedNotification;
+//         const session = await mongoose.startSession();
+//         session.startTransaction();
+//         try {
+//             newNotif = await Notifications.create({
+//                 body: `A retailer has requested ${quantity} kgs of crop ${crop}. Checkout the offer.`,
+//                 stockID: farmerstockId,
+//                 requirementId: retailerRequirementId
+//             })
 
-        try {
-            await client.messages.create({
-                from: process.env.TWILIO_PHONE_NUMBER,
-                to: contactNumber,
-                body: `Hello ${firstName} ${lastName}.A retailer has requested ${quantity} quintals of your crop ${crop}. Please check in-app notifications for more info.`,
-            });
-        } catch (twilioError) {
-            console.error("Failed to send SMS notification to the farmer", twilioError);
-            // return res.status(500).json({
-            //     success: false,
-            //     message: "Failed to send SMS notification to the retailer.However, your've been added to the pending requests of the order. Kindly check the app.",
-            // });
-        }
+//             updatedNotification = await UserNotifications.findOneAndUpdate(
+//                 { userId: farmerId },
+//                 { $push: { notification: newNotif._id } },
+//                 { new: true, upsert: true, session }
+//             );
 
-        return res.status(200).json({
-            success:true,
-            message:"Successfully requested the farmer for his crop.",
-            updatedNotification
-        })
+//             await FarmerStock.findByIdAndUpdate(
+//                 farmerstockId,
+//                 { $push: { pendingRetailerRequests: retailerRequirementId } },
+//                 { new: true, session }
+//             );
 
-    } catch(error){
-        console.error(error);
-        return res.status(500).json({
-            success: false,
-            message: "Error in requesting the farmer for his crop.",
-        });
-    }
-}
+//             await session.commitTransaction();
+//         } catch (error) {
+//             await session.abortTransaction();
+//             console.error("Error during transaction:", error);
+//             return res.status(500).json({
+//                 success: false,
+//                 message: "Failed to update farmer notification.",
+//             });
+//         } finally {
+//             session.endSession();
+//         }
+
+//         // const { contactNumber, firstName, lastName } = farmer;
+//         const contactNumber = farmerStock.userId.contactNumber;
+//         const firstName = farmerStock.userId.firstName;
+//         const lastName = farmerStock.userId.lastName;
+
+//         try {
+//             await client.messages.create({
+//                 from: process.env.TWILIO_PHONE_NUMBER,
+//                 to: contactNumber,
+//                 body: `Hello ${firstName} ${lastName}.A retailer has requested ${quantity} quintals of your crop ${crop}. Please check in-app notifications for more info.`,
+//             });
+//         } catch (twilioError) {
+//             console.error("Failed to send SMS notification to the farmer", twilioError);
+//         }
+
+//         return res.status(200).json({
+//             success: true,
+//             message: "Successfully requested the farmer for his crop.",
+//             updatedNotification
+//         })
+
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({
+//             success: false,
+//             message: "Error in requesting the farmer for his crop.",
+//         });
+//     }
+// }
 
 
 

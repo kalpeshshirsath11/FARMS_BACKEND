@@ -44,7 +44,30 @@ const userSchema = new mongoose.Schema({
     reviewCount:{
         type:Number,
         default:0
-    }    
+    },
+    reliabilityScore:{
+        type:Number,
+        default:50  //50%
+    },
+    allocatedDeals:[
+        {
+            groupId:{
+                type:mongoose.Schema.Types.ObjectId
+            },
+            totalQuantity:{
+                type:Number
+            },
+            avgPrice:{
+                type:Number
+            },
+            numberOfShopkeepers:{
+                type:Number
+            },
+            deliveryDate:{
+                type:String
+            }
+        }        
+    ]
 },
 {
     timestamps: true, //This automatically adds createdAt and updatedAt fields to your schema and updates the updatedAt field whenever the document is modified.

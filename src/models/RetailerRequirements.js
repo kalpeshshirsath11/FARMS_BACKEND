@@ -37,31 +37,55 @@ const retailerRequirementSchema = new mongoose.Schema({
         address:{  //address as a string
             type: String,
             required:true
+        },
+        landmark:{
+            type: String,
+            required:true
         }
     },
     expectedDeliveryDate: {   //ISO format YYYY-MM-DD
         type: Date,
         required: true 
     },
-    isFull:{
-        type:Boolean,
-        default:false
+    // accepted:{
+    //     type:Boolean,
+    //     default:false
+    // },
+    supplier:
+    {
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"FarmerStock"
     },
-    suppliers:[
+    pendingRequests: [
         {
-            type:mongoose.Schema.Types.ObjectId,
-            ref:"FarmerStock"
+            farmerStockId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "FarmerStock"
+            },
+            dealScore: {
+                type: Number
+            }
         }
-    ],
-    pendingRequests:[
-        {
-            type:mongoose.Schema.Types.ObjectId,
-            ref:"FarmerStock"
-        }
-    ],
+    ],    
     contactNumber:{  //not mandatory -> This will be displayed in BEST DEALS so farmers can contact retailer
         type:String,
         trim:true
+    },
+    groupId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
+    },
+    bestFarmerStockId:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"FarmerStock"
+    },
+    bestFarmerStockScore:{
+        type:Number,
+        default:-Infinity
+    },
+    locked:{
+        type:Boolean,
+        default:false
     }
 },
 {
@@ -70,6 +94,7 @@ const retailerRequirementSchema = new mongoose.Schema({
 )
 
 retailerRequirementSchema.index({crop:1, cropGrade:1});  //index crop and cropGrade in ascending order
-retailerRequirementSchema.index({ location: "2dsphere" });
+retailerRequirementSchema.index({ location: '2dsphere' });
+retailerRequirementSchema.index({ groupId: 1 });
 
 module.exports = mongoose.model("Retailer", retailerRequirementSchema);
