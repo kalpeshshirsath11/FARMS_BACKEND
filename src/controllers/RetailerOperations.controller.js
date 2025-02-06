@@ -175,11 +175,12 @@ exports.viewSupplierOfOrder = async (req, res) => {
         const farmerStock = await FarmerStock.findById(farmerStockId).select('userId').populate('userId', 'firstName lastName contactNumber averageRating reliabilityScore')
 
         const {firstName, lastName, contactNumber, averageRating, reliabilityScore} = farmerStock.userId;
+        const farmerAddress = farmerStock.location.address
 
         return res.status(200).json({
             success: true,
             message: "Supplier for this order fetched successfully.",
-            firstName, lastName, contactNumber, averageRating, reliabilityScore
+            firstName, lastName, contactNumber, averageRating, reliabilityScore, farmerAddress
         })
 
     } catch (error) {
