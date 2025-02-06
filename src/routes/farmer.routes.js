@@ -11,7 +11,7 @@ const {viewBestDeals, viewBestDealsInRange, requestTheGroupOfShopkeepers} = requ
 // const {authorize,isFarmer} = require('../middlewares/auth.js')
 const {createReview, getReviews, updateRating, editComment, deleteReview} = require('../controllers/RatingReviewOperations.js')
 
-const {viewFarmerNotifications,viewMyStock,viewAllocatedDeals,viewShopkeepersInAllocatedDeal} = require("../controllers/FarmerOperations.controller.js")
+const {viewFarmerNotifications,viewMyStock,viewAllocatedDeals,viewShopkeepersInAllocatedDeal,viewBestConsumerDeals,viewBestConsumerDealsInRange,requestTheGroupOfConsumers,viewConsumersInAllocatedDeal} = require("../controllers/FarmerOperations.controller.js")
 
 const {deleteNotification} = require("../controllers/RetailerOperations.controller.js");
 
@@ -35,6 +35,12 @@ router.get('/mystock', viewMyStock);  //done
 router.post('/requestsupply', requestTheGroupOfShopkeepers);  //done  
 router.get('/allocateddeals', viewAllocatedDeals) //done
 router.get('/dealdetails', viewShopkeepersInAllocatedDeal)  //done
+
+router.get('/consumerdeals/viewbestdeals', viewBestConsumerDeals);  //done
+router.post('/consumerdeals/viewbestdealsinrange', viewBestConsumerDealsInRange);  //done
+router.post('/consumerdeals/requestsupply', requestTheGroupOfConsumers);  //done
+router.get('/consumerdeals/dealdetails', viewConsumersInAllocatedDeal);  //done
+
 
 router.get('/notifications', viewFarmerNotifications);  
 router.post('/deletenotification', deleteNotification);  

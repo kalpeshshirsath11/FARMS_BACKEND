@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
     },
     accountType:{
         type:String,
-        enum:["Farmer", "Retailer", "Transporter", "Admin"],
+        enum:["Farmer", "Retailer", "Transporter", "Admin", "Consumer"],
         required:true
     },
     password:{
@@ -63,10 +63,16 @@ const userSchema = new mongoose.Schema({
             totalQuantity:{
                 type:Number
             },
-            avgPrice:{
-                type:Number
+            crop:{
+                type:String
+            },
+            cropGrade:{
+                type:String
             },
             numberOfShopkeepers:{
+                type:Number
+            },
+            numberOfConsumers:{
                 type:Number
             },
             deliveryDate:{
