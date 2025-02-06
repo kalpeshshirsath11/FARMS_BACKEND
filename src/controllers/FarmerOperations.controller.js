@@ -31,7 +31,7 @@ exports.postStock = async (req, res) => {
         });
     }
 
-    const quantityValue = Number(quantity);
+    const quantityValue = Number(quantity);     
     if (quantityValue <= 0) {
         console.log("err2")
         return res.status(400).json({
