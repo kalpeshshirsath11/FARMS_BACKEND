@@ -8,7 +8,7 @@ const { getCoordinates } = require("../services/geocodingService.js");
 const TransporterDetailsmodel = require("../models/tranportDetails.model.js")
 const pendingTransporterModel = require("../models/pendingTransporter.model.js")
 //  Fix: Define `findNearbyTransportRequirements` only once
- // Ensure you import the correct model
+// Ensure you import the correct model
 
 
  
@@ -89,24 +89,12 @@ const findNearbyTransportRequirements = async (longitude, latitude, maxDistanceK
 //  Fix: `getRequest` function
 const getRequest = async (req, res) => {
     try {
-        // const { location, maxDistance } = req.body;
+        const transporterId = req.user._id; // Get logged-in transporter ID
 
-        // if (!location || !maxDistance) {
-        //     return res.status(400).json({
-        //         success: false,
-        //         message: "All fields are required",
-        //     });
-        // }
-
-        // const locationCords = await getCoordinates(location);
-        // if (!locationCords || !locationCords.lat || !locationCords.lon) {
-        //     return res.status(400).json({
-        //         success: false,
-        //         message: "Invalid location",
-        //     });
-        // }
-
-        const data = await Transporter.find({}).populate('FarmerIds','firstName  lastName contactNumber');
+        // Fetch requests where the transporter has NOT already sent a request
+        const data = await Transporter.find({
+            requestedTransporters: { $ne: transporterId }, // Exclude requests with this ID
+        }).populate('FarmerIds', 'firstName lastName contactNumber');
 
         return res.status(200).json({
             success: true,
@@ -122,38 +110,39 @@ const getRequest = async (req, res) => {
     }
 };
 
+
 //  Fix: `requstStatusfunction` function
 const sendRequest = async (req, res) => {
     try {
-        const Transporterid = req.user._id;
+        const Transporterid = req.user._id; // Get transporter ID from logged-in user
         const requirementId = req.query.requirementId;
 
         if (!requirementId || !mongoose.Types.ObjectId.isValid(requirementId)) {
-                return res.status(400).json({
-                  success: false,
-                  message: "Invalid or missing transport requirement ID.",
-                });
-              }
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or missing transport requirement ID.",
+            });
+        }
 
-        // Fix: Fetching requirement from the correct model
+        // Fetch requirement from the correct model
         const requirementDetails = await Transporter.findById(requirementId);
 
         if (!requirementDetails) {
-            return res.status(400).json({
+            return res.status(404).json({
                 success: false,
                 message: "Requirement not found",
             });
         }
 
-        // Fix: Correct field names and object structure
+        // Create a pending request
         const pendingRequest = await pendingTransporterModel.create({
             Transporterid,
             Farmerid: requirementDetails.FarmerIds,
             Departlocation: requirementDetails.Departlocations,
             Destination: requirementDetails.Destination,
-            DepatrureDate: requirementDetails.DepatrureDate, // Fixed typo
+            DepatrureDate: requirementDetails.DepatrureDate, 
             quantities: requirementDetails.quantities,
-            contactNumber: requirementDetails.contactNumber, // Fixed typo
+            contactNumber: requirementDetails.contactNumber, 
         });
 
         if (!pendingRequest) {
@@ -162,6 +151,13 @@ const sendRequest = async (req, res) => {
                 message: "Error in uploading request",
             });
         }
+
+        // ✅ Update the transport requirement by adding Transporter ID to `requestedTransporters`
+        await Transporter.findByIdAndUpdate(
+            requirementId,
+            { $addToSet: { requestedTransporters: Transporterid } }, // Prevents duplicates
+            { new: true }
+        );
 
         return res.status(200).json({
             success: true,
@@ -177,7 +173,6 @@ const sendRequest = async (req, res) => {
         });
     }
 };
-
 
 
 const requstStatusfunction = async (req, res) => {

@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const User = require("../models/User")
+const transportrequirement = require("../models/TransportRequirements")
 
 const pendingTransportSchema = new mongoose.Schema(
   {
@@ -12,11 +14,16 @@ const pendingTransportSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    requirementId:{
+      type:mongoose.Schema.Types.ObjectId,
+      ref:"transportrequirement"
+
+    },
     crop: {
       type: String,
       trim: true,
     },
-    quantities: {
+    quantities: { 
       type: Number,
       required: true,
     },

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose")
+const TransportDetails= require("../models/tranportDetails.model")
 
 const userSchema = new mongoose.Schema({
     firstName:{
@@ -24,6 +25,11 @@ const userSchema = new mongoose.Schema({
     password:{
         type:String,
         required:true
+    },
+    transportDetails:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"TransportDetails"
+
     },
     
     profilePhoto:{
