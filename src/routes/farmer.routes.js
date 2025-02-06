@@ -44,11 +44,11 @@ router.get('/consumerdeals/dealdetails', viewConsumersInAllocatedDeal);  //done
 router.get('/notifications', viewFarmerNotifications);  
 router.post('/deletenotification', deleteNotification);  
 
-
+    
 router.post('/createreview', createReview);
 router.post('/updaterating', updateRating);
 router.post('/editcomment',  editComment);
-router.post('/deletereview', deleteReview);
+router.post('/deletereview', deleteReview); 
 router.get('/getreviews', getReviews);
 
 
