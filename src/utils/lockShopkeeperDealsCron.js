@@ -5,14 +5,14 @@ const cron = require("node-cron");
 const moment = require("moment");
 const retailerDemands = require("../models/RetailerRequirements");
 const FarmerStock = require("../models/FarmerStock");
-const client = require("../utils/twilioClient");
+const client = require("./twilioClient");
 const User = require("../models/User")
 
 // Function to execute the locking logic
 const lockDeals = async () => {
     try {
         const today = new Date();
-        const twoDaysLater = moment(today).add(25, "days").toDate(); 
+        const twoDaysLater = moment(today).add(25, "days").toDate();  //25 days for testing
         
         const demandsToLock = await retailerDemands.find({
             expectedDeliveryDate: { $lte: twoDaysLater },
@@ -116,6 +116,8 @@ const lockDeals = async () => {
                 $push:{
                     notification: newNotif._id
                 }
+            },{
+                upsert:true, new:true
             })
 
             try{
@@ -143,6 +145,8 @@ const lockDeals = async () => {
                         $push:{
                             notification:shopNotif._id
                         }
+                    },{
+                        upsert:true, new:true
                     }
                 )
             }

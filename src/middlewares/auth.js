@@ -17,7 +17,7 @@ exports.authorize = (req, res, next) => {
 
         try{
             const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
-            console.log(decoded);
+            // console.log(decoded);
             req.user = decoded; 
             next();
         }catch(err){
@@ -78,10 +78,27 @@ exports.isRetailer = (req, res, next) => {
 exports.isTransporter = (req, res, next) => {
     try{
         if(req.user.accountType !== "Transporter"){
-            console.log("err")
             return res.status(401).json({
                 success:false,
                 message:"This is a protected route for Transporter  ONLY !"
+            });
+        }
+        next();
+    } catch(err){
+        return res.status(500).json({
+            success:false,
+            message:"Some internal server error"
+        });
+    }
+} 
+
+
+exports.isConsumer = (req, res, next) => {
+    try{
+        if(req.user.accountType !== "Consumer"){
+            return res.status(401).json({
+                success:false,
+                message:"This is a protected route for CONSUMER  ONLY !"
             });
         }
         next();
