@@ -81,13 +81,14 @@ exports.postStock = async (req, res) => {
 
     const uploadedImage = await uploadOnCloudinary(image);
     if (!uploadedImage || !uploadedImage.secure_url) {
+        console.log("err 6")
         return res.status(500).json({
             success: false,
             message: "Failed to upload crop image to Cloudinary",
         });
     }
-// const finalLocation = `${location.village}, ${location.district}, ${location.state}`
-    const locationcoordinates = await getCoordinates(location);   //!! FINAL_LOCATION
+const finalLocation = `${location.village}, ${location.district}, ${location.state}`
+    const locationcoordinates = await getCoordinates(finalLocation);   //!! FINAL_LOCATION
     if (!locationcoordinates) {
       return res.status(400).json({
         success: false,
@@ -108,7 +109,7 @@ exports.postStock = async (req, res) => {
         image: uploadedImage.secure_url,
         location: {
             type:"Point",
-            address:location,
+            address:finalLocation,
             coordinates:[longi, lati]
         },
         contactNumber:contactNumber,

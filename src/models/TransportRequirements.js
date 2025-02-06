@@ -7,6 +7,10 @@ const transportRequirementSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    requestedTransporters:[{
+      type:mongoose.Schema.Types.ObjectId,
+      ref:"User"
+    }],
 
     Departlocations: {
       type: {

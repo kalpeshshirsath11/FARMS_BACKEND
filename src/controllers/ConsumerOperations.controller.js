@@ -53,7 +53,7 @@ exports.postRequirement = async (req, res) => {
 
         let groupId = existingGroup ? existingGroup.groupId : new mongoose.Types.ObjectId();
 
-        const displayAddress = `${location.areaName}, ${location.city}, ${location.district}, ${location.state}`;
+        const displayAddress = `${location.apartment},${location.areaName}, ${location.city}, ${location.district}, ${location.state}`;
 
         const newRequirement = await consumerDemands.create({
             userId: consumerID,
@@ -125,15 +125,16 @@ exports.viewSupplierOfOrder = async (req, res) => {
         if (!farmerStockId) {
             return res.status(200).json({ success: true, message: "No farmer has been allocated for this order yet." });
         }
-
-        const farmerStock = await FarmerStock.findById(farmerStockId).select('userId').populate('userId', 'firstName lastName contactNumber averageRating reliabilityScore');
+ 
+        const farmerStock = await FarmerStock.findById(farmerStockId).select('userId location').populate('userId', 'firstName lastName contactNumber averageRating reliabilityScore');
 
         const { firstName, lastName, contactNumber, averageRating, reliabilityScore } = farmerStock.userId;
+        const farmerAddress = farmerStock.location.address
 
         return res.status(200).json({
             success: true,
             message: "Supplier for this order fetched successfully.",
-            firstName, lastName, contactNumber, averageRating, reliabilityScore
+            firstName, lastName, contactNumber, averageRating, reliabilityScore, farmerAddress
         });
     } catch (error) {
         console.error(error);

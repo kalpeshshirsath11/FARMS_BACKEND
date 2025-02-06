@@ -18,10 +18,11 @@ exports.postRequirement = async (req, res) => {
         const retailerID = req.user._id;
 
         if (!crop || !cropGrade || !quantity || !price || !location || !contactNumber) {
+            console.log("error in this")
             return res.status(400).json({ success: false, message: "All fields are required for posting crop requirements." });
         }
 
-        const finalLocation = `${location.city}, ${location.district}, ${location.state}`;
+        const finalLocation = `${location.village}, ${location.district}, ${location.state}`;
         // console.log(finalLocation);
         if (!expectedDeliveryDate || isNaN(new Date(expectedDeliveryDate))) {
             return res.status(400).json({ success: false, message: "A valid expected delivery date is required." });
@@ -57,7 +58,7 @@ exports.postRequirement = async (req, res) => {
 
         let groupId = existingGroup ? existingGroup.groupId : new mongoose.Types.ObjectId();
 
-        const displayAddress = `${location.areaName}, ${location.city}, ${location.district}, ${location.state}`;
+        const displayAddress = `${location.areaName}, ${location.village}, ${location.district}, ${location.state}`;
 
         const newRequirement = await retailerDemands.create({
             userId: retailerID,
@@ -174,11 +175,12 @@ exports.viewSupplierOfOrder = async (req, res) => {
         const farmerStock = await FarmerStock.findById(farmerStockId).select('userId').populate('userId', 'firstName lastName contactNumber averageRating reliabilityScore')
 
         const {firstName, lastName, contactNumber, averageRating, reliabilityScore} = farmerStock.userId;
+        const farmerAddress = farmerStock.location.address
 
         return res.status(200).json({
             success: true,
             message: "Supplier for this order fetched successfully.",
-            firstName, lastName, contactNumber, averageRating, reliabilityScore
+            firstName, lastName, contactNumber, averageRating, reliabilityScore, farmerAddress
         })
 
     } catch (error) {

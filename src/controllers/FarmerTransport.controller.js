@@ -405,6 +405,9 @@ const acceptRequestTransporter = async (req, res) => {
           });
       }
 
+      // Delete the TransporterDemand document based on the requirementId from the acceptance
+     if(acceptance.requirementId) await TransporterDemand.deleteOne({ _id: acceptance.requirementId });
+
       return res.status(200).json({
           success: true,
           message: "Request accepted successfully.",
@@ -420,8 +423,42 @@ const acceptRequestTransporter = async (req, res) => {
   }
 };
 
+const mytransportPendingrequest = async (req, res) => {
+  try {
+    const myid = req.user?._id; 
 
+    if (!myid || !mongoose.Types.ObjectId.isValid(myid)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or missing user ID.",
+      });
+    }
+
+    const myrequest = await pendingRequest
+      .find({ Farmerid: myid, completionFlag: false })
+      .populate("Transporterid", "firstName lastName");
+
+    if (!myrequest || myrequest.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No pending requests found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      myrequest,
+    });
+  } catch (error) {
+    console.error("Error fetching pending requests:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching pending requests.",
+      error: error.message,
+    });
+  }
+};
 
 
   
-module.exports = {requestTransport,tranportReqfarmer,reqFarmer,getNotifications,acceptRequest,myRequestFeed,acceptRequestTransporter}
+module.exports = {requestTransport,tranportReqfarmer,reqFarmer,getNotifications,acceptRequest,myRequestFeed,acceptRequestTransporter,mytransportPendingrequest}
