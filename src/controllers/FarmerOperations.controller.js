@@ -18,6 +18,7 @@ const {calculateByRoadDistanceWithCoordinates} = require("../services/distanceCa
 const cron = require("node-cron");
 const moment = require("moment");
 const ConsumerRequirements = require("../models/ConsumerRequirements.js"); 
+const perKmCost = require("../utils/transportCostCalculator.js")
 
 require("dotenv").config();
 
@@ -186,8 +187,12 @@ exports.viewBestDeals = async (req, res) => {
 
             if (typeof maxDistance !== "number" || isNaN(maxDistance)) return null;
             if (typeof minDistance !== "number" || isNaN(minDistance)) return null;
-            
-            const profitMargin = (group.avgPrice * group.totalQuantity) - (maxDistance * 7);
+
+            let distanceTravelled = maxDistance*2;
+            let perKmCostValue = await perKmCost(totalQuantity);
+            let transportCost = distanceTravelled * perKmCostValue;
+
+            const profitMargin = (group.avgPrice * group.totalQuantity) - transportCost;
             const groupRating = group.avgGroupRating;
             if(groupRating == null){
                 groupRating = 0;
@@ -296,8 +301,11 @@ exports.viewBestDealsInRange = async (req, res) => {
                     groupRating = 0;
                 }
                 
-                //temporary - 7rs per km
-                const profitMargin = (priceOffered * quantityRequired) - (maxDistance * 7);
+                let distanceTravelled = maxDistance*2;
+                let perKmCostValue = await perKmCost(totalQuantity);
+                let transportCost = distanceTravelled * perKmCostValue;
+
+                const profitMargin = (priceOffered * quantityRequired) - transportCost;
 
                 const dealScore = parseFloat(
                     (k1 * profitMargin - k2 * maxDistance + k3 * groupRating).toFixed(2)
@@ -472,7 +480,6 @@ exports.viewShopkeepersInAllocatedDeal = async (req, res) => {
 
 exports.viewFarmerNotifications = async (req, res) => {
     try{
-
         const {myId} = req.query;  //get it from payload
 
         const allNotifications = await UserNotifications.find({userId: myId}).populate('notification');
@@ -622,9 +629,13 @@ exports.viewBestConsumerDeals = async (req, res) => {
             const minDistance = Math.min(...distances);
             const maxDistance = Math.max(...distances);
 
+            let distanceTravelled = maxDistance*2;
+            let perKmCostValue = await perKmCost(totalQuantity);
+            let transportCost = distanceTravelled * perKmCostValue;
+
+
             if (isNaN(maxDistance) || isNaN(minDistance)) return null;
-            
-            const profitMargin = (minExpectedPrice * group.totalQuantity) - (maxDistance * 7);
+            const profitMargin = (minExpectedPrice * group.totalQuantity) - transportCost;
             const groupRating = group.avgGroupRating || 0;
             const dealScore = parseFloat((k1 * profitMargin - k2 * maxDistance + k3 * groupRating).toFixed(2));
             
@@ -692,7 +703,12 @@ exports.viewBestConsumerDealsInRange = async (req, res) => {
             const maxDistance = Math.max(...distances);
             if (maxDistance > maxdist + 5) return null;
 
-            const profitMargin = (minExpectedPrice * group.totalQuantity) - (maxDistance * 7);
+            let distanceTravelled = maxDistance*2;
+            let perKmCostValue = await perKmCost(totalQuantity);
+            let transportCost = distanceTravelled * perKmCostValue;
+
+
+            const profitMargin = (minExpectedPrice * group.totalQuantity) - transportCost;
             const groupRating = group.avgGroupRating || 0;
             const dealScore = parseFloat((k1 * profitMargin - k2 * maxDistance + k3 * groupRating).toFixed(2));
             
