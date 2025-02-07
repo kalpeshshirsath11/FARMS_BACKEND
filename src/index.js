@@ -16,6 +16,8 @@ const cors = require("cors")
 
 require("./utils/lockShopkeeperDealsCron.js");   //schedule cron-job when server starts
 require("./utils/lockConsumerDealsCron.js");   //schedule cron-job when server starts
+require("./utils/SendRegionWiseDataCron.js");
+require("./utils/SendRetailerDemandDataCron.js")
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());

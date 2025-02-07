@@ -163,7 +163,11 @@ const lockDeals = async () => {
 
 
 // Schedule the cron job to run at midnight
+<<<<<<< HEAD
 cron.schedule("0 0 * * *", lockDeals);  
+=======
+cron.schedule("30 0 * * *", lockDeals);
+>>>>>>> a1eb0642c57fd83da380398ca369cf185a9a6d86
 
 
 // module.exports is kept the same
