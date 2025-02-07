@@ -351,8 +351,7 @@ exports.viewBestDealsInRange = async (req, res) => {
 //When farmer clicks on "Request supply" on the BEST DEALS page
 exports.requestTheGroupOfShopkeepers = async (req, res) => {
     try {
-        const { groupId } = req.body;  // on clicking "Request Supply"
-        const { farmerStockId, maxDistance } = req.query;
+        const { groupId, farmerStockId, maxDistance } = req.body;  // Read from request body
 
         const groupOfDemands = await retailerDemands.find({ groupId });
         if (!groupOfDemands || groupOfDemands.length === 0) {
@@ -375,13 +374,10 @@ exports.requestTheGroupOfShopkeepers = async (req, res) => {
         const dealScore = (k1 * (-minExpectedPrice)) + (k2 * reliabilityScore) - (k3 * maxDistance) + (k4 * averageRating);
 
         for (let demand of groupOfDemands) {
-            // Push the request into pendingRequests array
             await retailerDemands.updateOne(
                 { _id: demand._id },
                 { $push: { pendingRequests: { farmerStockId, dealScore } } }
             );
-
-            
         }
 
         return res.status(200).json({
@@ -397,6 +393,7 @@ exports.requestTheGroupOfShopkeepers = async (req, res) => {
         });
     }
 };
+
 
 
 //In profile, when farmer clicks on "View Allocated Deals" button

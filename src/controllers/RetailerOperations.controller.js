@@ -88,7 +88,8 @@ exports.postRequirement = async (req, res) => {
 exports.viewNotifications = async (req, res) => {
     try {
 
-        const { myId } = req.query;  //get it from payload
+        const { myId } = req.user._id;  //get it from payload
+
 
         const allNotifications = await UserNotifications.find({ userId: myId }).populate('notification');
 
@@ -118,7 +119,7 @@ exports.viewNotifications = async (req, res) => {
 exports.viewMyOrders = async (req, res) => {
     try {
 
-        const { retailerId } = req.query;  //Retailer is logged in, so we can get _id from payload
+        const  retailerId  = req.user._id;  //Retailer is logged in, so we can get _id from payload
 
         const myOrders = await retailerDemands.find({ userId: retailerId }).sort({ createdAt: -1 });
 

@@ -27,7 +27,7 @@ const signUpUser = async (req, res) => {
 
         // console.log(firstName, lastName, accountType, password, contactNumber);
 
-        if (!firstName || !lastName || !contactNumber || !password ) {
+        if (!firstName || !lastName || !contactNumber || !password ||!accountType) {
             return res.status(400).json({ error: "All fields are required" });
         }
 
