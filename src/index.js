@@ -24,7 +24,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cors({
   origin: "http://localhost:5173", // Frontend URL
-  credentials: true, // 👈 Required for cookies to be stored
+  credentials: true, //required for cookies to be stored
 }));
 app.use(cookieParser())
 
