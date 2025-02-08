@@ -174,9 +174,9 @@ const loginUser = async(req,res)=>{
 
         res.cookie("token", token,{
             httpOnly:true,
-            secure: false,
-            sameSite: "None",
-            path:"/"
+            secure: true,
+            sameSite: 'None',
+            // path:"/"
         }).status(200).json({
             success: true,
             token,
