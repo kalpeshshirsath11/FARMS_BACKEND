@@ -17,8 +17,8 @@ const removeExpiredDeals = async () => {
     }
 };
 
-// Schedule the cron job to run every day at midnight
-cron.schedule("0 1 * * *", () => {
-    console.log("Running cron job to remove expired allocated deals...");
-    removeExpiredDeals();
-});
+// // Schedule the cron job to run every day at midnight
+// cron.schedule("0 1 * * *", () => {
+//     console.log("Running cron job to remove expired allocated deals...");
+//     removeExpiredDeals();
+// });

@@ -119,6 +119,6 @@ const lockConsumerDeals = async () => {
     }
 };
 
-cron.schedule("0 0 * * *", lockConsumerDeals);
+// cron.schedule("0 0 * * *", lockConsumerDeals);
 
 module.exports = cron;

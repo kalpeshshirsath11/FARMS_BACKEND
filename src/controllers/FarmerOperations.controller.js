@@ -609,7 +609,7 @@ exports.viewBestConsumerDeals = async (req, res) => {
         ]);
 
         if (matchedGroups.length === 0) {
-            return res.status(404).json({ success: false, message: "No matches found." });
+            return res.status(400).json({ success: false, message: "No matches found." });
         }
 
         const farmerCoordinates = location.coordinates;
@@ -728,8 +728,8 @@ exports.viewBestConsumerDealsInRange = async (req, res) => {
 
 exports.requestTheGroupOfConsumers = async (req, res) => {
     try {
-        const { groupId } = req.body;
-        const { farmerStockId, maxDistance } = req.query;
+        const { groupId,farmerStockId, maxDistance } = req.body;
+        // const { farmerStockId, maxDistance } = req.query;
 
         const groupOfDemands = await ConsumerRequirements.find({ groupId });
         if (!groupOfDemands || groupOfDemands.length === 0) {
@@ -752,7 +752,7 @@ exports.requestTheGroupOfConsumers = async (req, res) => {
         const dealScore = (k1 * (-minExpectedPrice)) + (k2 * reliabilityScore) - (k3 * maxDistance) + (k4 * averageRating);
 
         for (let demand of groupOfDemands) {
-            // Push the request into pendingRequests array
+            
             await ConsumerRequirements.updateOne(
                 { _id: demand._id },
                 { $push: { pendingRequests: { farmerStockId, dealScore } } }

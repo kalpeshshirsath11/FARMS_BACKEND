@@ -44,6 +44,6 @@ const processRetailerDemands = async () => {
 };
 
 // Schedule the cron job to run every day at midnight (00:00)
-cron.schedule("0 2 * * *", processRetailerDemands);
+// cron.schedule("0 2 * * *", processRetailerDemands);
 
-console.log("Cron job scheduled to run daily at midnight.");
+// console.log("Cron job scheduled to run daily at midnight.");

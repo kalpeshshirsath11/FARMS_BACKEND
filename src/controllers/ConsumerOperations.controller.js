@@ -15,25 +15,30 @@ exports.postRequirement = async (req, res) => {
         const consumerID = req.user._id;
 
         if (!crop || !cropGrade || !quantity || !location || !contactNumber) {
+            console.log("problem 1")
             return res.status(400).json({ success: false, message: "All fields are required for posting crop requirements." });
         }
 
         const finalLocation = `${location.city}, ${location.district}, ${location.state}`;
         if (!expectedDeliveryDate || isNaN(new Date(expectedDeliveryDate))) {
+            console.log("problem 2")
             return res.status(400).json({ success: false, message: "A valid expected delivery date is required." });
         }
 
         const deliveryDate = new Date(expectedDeliveryDate);
         if (deliveryDate < new Date()) {
+            console.log("problem 3")
             return res.status(400).json({ success: false, message: "Expected delivery date cannot be in the past." });
         }
 
         if (quantity <= 0) {
+            console.log("error in in this 5")
             return res.status(400).json({ success: false, message: "Quantity must be positive values." });
         }
 
         const locationCoordinates = await getCoordinates(finalLocation);
         if (!locationCoordinates) {
+            console.log("error in thi")
             return res.status(400).json({ success: false, message: "Invalid location. Unable to retrieve coordinates." });
         }
         const [longi, lati] = [locationCoordinates.lon, locationCoordinates.lat];
