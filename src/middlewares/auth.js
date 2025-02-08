@@ -8,7 +8,7 @@ exports.authorize = (req, res, next) => {
         const token = req.cookies.token 
        
         if(!token || token === undefined){
-            console.log("err4")
+            // console.log("err4")
             return res.status(401).json({
                 success:false,
                 message:"Token missing"
