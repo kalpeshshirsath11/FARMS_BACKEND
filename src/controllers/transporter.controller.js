@@ -7,8 +7,7 @@ const User = require("../models/User.js");
 const { getCoordinates } = require("../services/geocodingService.js");
 const TransporterDetailsmodel = require("../models/tranportDetails.model.js")
 const pendingTransporterModel = require("../models/pendingTransporter.model.js")
-//  Fix: Define `findNearbyTransportRequirements` only once
-// Ensure you import the correct model
+
 
 
  
@@ -17,7 +16,6 @@ const TransporterDetails = async (req, res) => {
         const TransporterId = req.user._id;
         const { vehicleType, capacity, isColdStorageAvailable } = req.body;
 
-        // Fix: Ensure all fields are properly validated
         if (vehicleType === undefined || capacity === undefined || isColdStorageAvailable === undefined) {
             console.log("er")
             return res.status(400).json({
@@ -61,7 +59,7 @@ const TransporterDetails = async (req, res) => {
 
 const findNearbyTransportRequirements = async (longitude, latitude, maxDistanceKm = 40) => {
     try {
-        const maxDistanceMeters = maxDistanceKm * 1000; // Convert km to meters
+        const maxDistanceMeters = maxDistanceKm * 1000; 
 
         const results = await Transporter.aggregate([
             {
@@ -73,10 +71,10 @@ const findNearbyTransportRequirements = async (longitude, latitude, maxDistanceK
                     distanceField: "distance",
                     maxDistance: maxDistanceMeters,
                     spherical: true,
-                    key: "Departlocations.0.coordinates" // ✅ Use only first index of the array
+                    key: "Departlocations.0.coordinates" 
                 }
             },
-            { $sort: { distance: 1 } } // Sort by nearest first
+            { $sort: { distance: 1 } } 
         ]);
 
         return results || [];
@@ -86,14 +84,12 @@ const findNearbyTransportRequirements = async (longitude, latitude, maxDistanceK
     }
 };
 
-//  Fix: `getRequest` function
 const getRequest = async (req, res) => {
     try {
-        const transporterId = req.user._id; // Get logged-in transporter ID
+        const transporterId = req.user._id; 
 
-        // Fetch requests where the transporter has NOT already sent a request
         const data = await Transporter.find({
-            requestedTransporters: { $ne: transporterId }, // Exclude requests with this ID
+            requestedTransporters: { $ne: transporterId }, 
         }).populate('FarmerIds', 'firstName lastName contactNumber');
 
         return res.status(200).json({
@@ -111,7 +107,6 @@ const getRequest = async (req, res) => {
 };
 
 
-//  Fix: `requstStatusfunction` function
 const sendRequest = async (req, res) => {
     try {
         const Transporterid = req.user._id; // Get transporter ID from logged-in user
@@ -152,7 +147,6 @@ const sendRequest = async (req, res) => {
             });
         }
 
-        // ✅ Update the transport requirement by adding Transporter ID to `requestedTransporters`
         await Transporter.findByIdAndUpdate(
             requirementId,
             { $addToSet: { requestedTransporters: Transporterid } }, // Prevents duplicates
