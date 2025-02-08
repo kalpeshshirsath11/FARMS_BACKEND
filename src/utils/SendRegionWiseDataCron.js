@@ -130,8 +130,8 @@ async function updateSendAndClearData() {
 }
 
 // Schedule the cron job to run daily at midnight
-cron.schedule("30 1 * * *", updateSendAndClearData, {
-    scheduled: true,
-    timezone: "Asia/Kolkata"
-});
+// cron.schedule("30 1 * * *", updateSendAndClearData, {
+//     scheduled: true,
+//     timezone: "Asia/Kolkata"
+// });
 
