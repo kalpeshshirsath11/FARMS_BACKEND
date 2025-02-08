@@ -9,7 +9,7 @@ const client = require("../utils/twilioClient");
 const User = require("../models/User.js");
 require("dotenv").config()
 const validator = require("validator");
-
+const fetchMarketData = require("../utils/RealTimeCommodityPrice.js")
 
 exports.postRequirement = async (req, res) => {
     try {
@@ -20,6 +20,23 @@ exports.postRequirement = async (req, res) => {
         if (!crop || !cropGrade || !quantity || !price || !location || !contactNumber) {
             console.log("error in this")
             return res.status(400).json({ success: false, message: "All fields are required for posting crop requirements." });
+        }
+
+        let mktPrice = await fetchMarketData(location.district, crop);
+        mktPrice = Number(mktPrice);
+        // console.log(mktPrice);
+
+        let perKgMktPrice = mktPrice / 100;
+
+        let lowval = mktPrice - (0.1 * mktPrice);  //10% below mkt price
+        let perKgPrice = parseFloat(lowval/100);
+        // console.log("Per kg: ", perKgPrice);
+
+        if(price < perKgPrice){
+            return res.status(400).json({
+                success:false,
+                message:`Price is too low. The current market price of ${crop} is Rs. ${perKgMktPrice} per kg. Please enter a price greater than 10% below the current market price (greater than ${perKgPrice} per kg).`
+            })
         }
 
         const finalLocation = `${location.village}, ${location.district}, ${location.state}`;

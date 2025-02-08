@@ -4,7 +4,7 @@ const {dbConnection} = require("./config/database.js")
 const {cloudinaryConnect} = require("./config/cloudinary.js")
 const userRoute = require("./routes/user.routes.js");
 const cookieParser = require("cookie-parser");
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 9000;
 const app = express();
 const farmRoute = require('./routes/farmer.routes.js')
 const retailerRoute = require('./routes/retailer.routes.js')
@@ -18,6 +18,7 @@ require("./utils/lockShopkeeperDealsCron.js");   //schedule cron-job when server
 require("./utils/lockConsumerDealsCron.js");   //schedule cron-job when server starts
 require("./utils/SendRegionWiseDataCron.js");
 require("./utils/SendRetailerDemandDataCron.js")
+
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
