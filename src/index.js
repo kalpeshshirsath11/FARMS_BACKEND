@@ -23,7 +23,7 @@ require("./utils/SendRetailerDemandDataCron.js")
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cors({
-  origin: "https://farmsv0.onrender.com/loginpage", // Frontend URL
+  origin: "https://farmsv0.onrender.com/", // Frontend URL
   credentials: true, //required for cookies to be stored
 }));
 app.use(cookieParser())
