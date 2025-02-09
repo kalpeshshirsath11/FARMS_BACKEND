@@ -109,7 +109,7 @@ exports.postStock = async (req, res) => {
         });
     }
 const finalLocation = `${location.village}, ${location.district}, ${location.state}`
-    const locationcoordinates = await getCoordinates(location);   //!! FINAL_LOCATION
+    const locationcoordinates = await getCoordinates(finalLocation);   //!! FINAL_LOCATION
     if (!locationcoordinates) {
       return res.status(400).json({
         success: false,
