@@ -22,10 +22,17 @@ require("./utils/SendRetailerDemandDataCron.js")
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
-app.use(cors({
-  origin:  "http://localhost:5173", 
-  credentials: true, //required for cookies to be stored
-}));
+const cors = require("cors");
+
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Allow frontend URL
+    credentials: true, // Allow cookies (for JWT in cookies)
+    methods: ["GET", "POST", "PUT", "DELETE"], // Allowed methods
+    allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+  })
+);
+
 app.use(cookieParser())
 
 
