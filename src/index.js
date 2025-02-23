@@ -1,53 +1,60 @@
+// Example Structure
 const express = require("express");
 require("dotenv").config();
-const {dbConnection} = require("./config/database.js")
-const {cloudinaryConnect} = require("./config/cloudinary.js")
-const userRoute = require("./routes/user.routes.js");
+const { dbConnection } = require("./config/database.js");
+const { cloudinaryConnect } = require("./config/cloudinary.js");
 const cookieParser = require("cookie-parser");
-const PORT = process.env.PORT || 9000;
+const cors = require("cors");
+
 const app = express();
-const farmRoute = require('./routes/farmer.routes.js')
-const retailerRoute = require('./routes/retailer.routes.js')
-const transportRoute = require('./routes/transporter.routes.js')
-const consumerRoutes = require('./routes/consumer.routes.js')
+const PORT = process.env.PORT || 9000;
 
-const {authorize, isFarmer, isRetailer, isTransporter, isConsumer} = require("./middlewares/auth.js")
-const cors = require("cors")
+// Routes and Middleware Imports
+const userRoute = require("./routes/user.routes.js");
+const farmRoute = require("./routes/farmer.routes.js");
+const retailerRoute = require("./routes/retailer.routes.js");
+const transportRoute = require("./routes/transporter.routes.js");
+const consumerRoutes = require("./routes/consumer.routes.js");
 
-require("./utils/lockShopkeeperDealsCron.js");   //schedule cron-job when server starts
-require("./utils/lockConsumerDealsCron.js");   //schedule cron-job when server starts
+const { authorize, isFarmer, isRetailer, isTransporter, isConsumer } = require("./middlewares/auth.js");
+
+// Cron Jobs
+require("./utils/lockShopkeeperDealsCron.js");
+require("./utils/lockConsumerDealsCron.js");
 require("./utils/SendRegionWiseDataCron.js");
-require("./utils/SendRetailerDemandDataCron.js")
+require("./utils/SendRetailerDemandDataCron.js");
 
-
+// Middleware Configuration
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+app.use(cookieParser());
 
-
+// CORS Configuration
 app.use(
   cors({
-    origin: "https://farms-frontend-indol.vercel.app", // Allow frontend URL
-    credentials: true, // Allow cookies (for JWT in cookies)
-    methods: ["GET", "POST", "PUT", "DELETE"], // Allowed methods
-    allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+    origin: ["https://farms-frontend-indol.vercel.app", "https://farms-kfu1.onrender.com"],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-app.use(cookieParser())
+// Routes Setup
+app.use("/api", userRoute);
+app.use('/farmer', authorize, isFarmer, farmRoute);
+app.use('/retailer', authorize, isRetailer, retailerRoute);
+app.use('/transporter', authorize, isTransporter, transportRoute);
+app.use('/consumer', authorize, isConsumer, consumerRoutes);
 
-
-
-app.use("/api",userRoute);  //public routes
-app.use('/farmer',authorize, isFarmer, farmRoute)
-app.use('/retailer',authorize ,isRetailer, retailerRoute)
-app.use('/transporter',authorize, isTransporter,transportRoute)
-app.use('/consumer',authorize, isConsumer,consumerRoutes)
-app.get('/',(req,res)=>{
+// Base Route
+app.get('/', (req, res) => {
   return res.status(200).json({
-    success:true
-  })
-})
+    success: true,
+    message: 'Server is running successfully!'
+  });
+});
 
+// Database Connection and Server Start
 dbConnection()
   .then(() => {
     app.listen(PORT, () => {
