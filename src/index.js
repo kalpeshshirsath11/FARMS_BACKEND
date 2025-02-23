@@ -42,7 +42,7 @@ app.use('/farmer',authorize, isFarmer, farmRoute)
 app.use('/retailer',authorize ,isRetailer, retailerRoute)
 app.use('/transporter',authorize, isTransporter,transportRoute)
 app.use('/consumer',authorize, isConsumer,consumerRoutes)
-app.get('/',()=>{
+app.get('/',(req,res)=>{
   return res.status(200).json({
     success:true
   })
