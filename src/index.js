@@ -26,7 +26,7 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: "http://localhost:5173", // Allow frontend URL
+    origin: "https://farms-frontend-indol.vercel.app", // Allow frontend URL
     credentials: true, // Allow cookies (for JWT in cookies)
     methods: ["GET", "POST", "PUT", "DELETE"], // Allowed methods
     allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
