@@ -31,11 +31,10 @@ app.use(cookieParser());
 
 // CORS Configuration
 app.use(cors({
-  origin: [
-      "https://farms-frontend-indol.vercel.app",
-      "https://farms-kfu1.onrender.com",
+  origin: 
+      
       "https://farms-frontend-2.onrender.com"
-  ],
+  ,
   credentials: true
 }));
 
