@@ -30,14 +30,15 @@ app.use(express.json());
 app.use(cookieParser());
 
 // CORS Configuration
-app.use(
-  cors({
-    origin: ["https://farms-frontend-indol.vercel.app", "https://farms-kfu1.onrender.com","https://farms-frontend-2.onrender.com"],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+app.use(cors({
+  origin: [
+      "https://farms-frontend-indol.vercel.app",
+      "https://farms-kfu1.onrender.com",
+      "https://farms-frontend-2.onrender.com"
+  ],
+  credentials: true
+}));
+
 
 // Routes Setup
 app.use("/api", userRoute);

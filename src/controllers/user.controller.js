@@ -197,7 +197,8 @@ const logoutUser = (req, res) => {
       .clearCookie("token", {
         httpOnly: true,
         secure: true, // Match the login cookie settings
-        sameSite: "None"
+        sameSite: "None",
+        partitioned: true
       })
       .status(200)
       .json({ message: "Logged out successfully" });
