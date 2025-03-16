@@ -33,7 +33,7 @@ app.use(cookieParser());
 app.use(cors({
   origin: 
       
-      "https://farms-frontend-2.onrender.com"
+  "https://farms-glmv.onrender.com"
   ,
   credentials: true
 }));
