@@ -53,6 +53,13 @@ app.get('/', (req, res) => {
     message: 'Server is running successfully!'
   });
 });
+app.head('/', (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: 'Server is running successfully!'
+  });
+});
+
 
 // Database Connection and Server Start
 dbConnection()
