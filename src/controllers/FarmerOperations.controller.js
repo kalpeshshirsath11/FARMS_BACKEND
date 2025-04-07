@@ -29,22 +29,22 @@ exports.postStock = async (req, res) => {
     const {cropname, cropgrade, quantity, location, contactNumber} = req.body;  //location should be comma separated village,district and state
     let {minExpectedPrice} = req.body;
 
-    let mktPrice = await fetchMarketData(location.district, cropname);
-    mktPrice = Number(mktPrice);
-    // console.log(mktPrice);
+    // let mktPrice = await fetchMarketData(location.district, cropname);
+    // mktPrice = Number(mktPrice);
+    // // console.log(mktPrice);
 
-    let perKgMktPrice = mktPrice / 100;
+    // let perKgMktPrice = mktPrice / 100;
 
-    let highval = mktPrice + (0.2 * mktPrice);  //20% above mkt price
-    let perKgPrice = parseFloat(highval/100);
-    // console.log("Per kg: ", perKgPrice);
+    // let highval = mktPrice + (0.2 * mktPrice);  //20% above mkt price
+    // let perKgPrice = parseFloat(highval/100);
+    // // console.log("Per kg: ", perKgPrice);
 
-    if(minExpectedPrice > perKgPrice){
-        return res.status(400).json({
-            success:false,
-            message:`Price is too high. The current market price of ${cropname} is Rs. ${perKgMktPrice} per kg. Please enter a price less than 20% above the current market price (less than ${perKgPrice} per kg).`
-        })
-    }
+    // if(minExpectedPrice > perKgPrice){
+    //     return res.status(400).json({
+    //         success:false,
+    //         message:`Price is too high. The current market price of ${cropname} is Rs. ${perKgMktPrice} per kg. Please enter a price less than 20% above the current market price (less than ${perKgPrice} per kg).`
+    //     })
+    // }
 
     
     const farmerDetails = req.user;
