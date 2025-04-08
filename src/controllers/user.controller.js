@@ -37,7 +37,8 @@ const signUpUser = async (req, res) => {
         }
         const passcode_valid = validatePassword(password);
         if (passcode_valid.length > 0) { // Check if there are any validation errors
-            return res.status(402).json({
+            console.log("Invalid input");
+            return res.status(400).json({
             err: passcode_valid
         });
 }
