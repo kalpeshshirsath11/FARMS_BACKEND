@@ -19,70 +19,67 @@ const signUpUser = async (req, res) => {
             accountType,
             password
         } = req.body;
-        const profile = req.file?.path;
-        if(profile){
-            const photo = await uploadOnCloudinary(profile);
-        }
-        
 
-        // console.log(firstName, lastName, accountType, password, contactNumber);
-
-        if (!firstName || !lastName || !contactNumber || !password ||!accountType) {
+        // 1. Check required fields
+        if (!firstName || !lastName || !contactNumber || !password || !accountType) {
             return res.status(400).json({ error: "All fields are required" });
         }
 
-        // contact number validation
-        if (!validator.isMobilePhone(contactNumber, 'any')) {
+        // 2. Validate contact number
+        if (!validator.isMobilePhone(contactNumber, "any")) {
             return res.status(400).json({ error: "Invalid contact number" });
         }
+
+        // 3. Validate password strength
         const passcode_valid = validatePassword(password);
-        if (passcode_valid.length > 0) { // Check if there are any validation errors
-            console.log("Invalid input");
-            return res.status(400).json({
-            err: passcode_valid
-        });
-}
+        if (passcode_valid.length > 0) {
+            return res.status(400).json({ errors: passcode_valid });
+        }
 
-        // if (password !== confirmPassword) {
-        //     return res.status(400).json({
-        //         success: false,
-        //         message: "Password and Confirm password do not match",
-        //     });
-        // } 
-
+        // 4. Check if user already exists
         const existedUser = await User.findOne({ contactNumber });
         if (existedUser) {
             return res.status(409).json({ error: "User already exists" });
         }
 
-        const otp = Math.floor(1000 + Math.random() * 9000); // Generate 4-digit OTP
+        // 5. Encrypt password
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        const hashedOtp = await bcrypt.hash(otp.toString(), 10);
-        await Otp.create({ contactNumber, otp: hashedOtp });
+        // 6. Upload profile photo if provided
+        let profilePhotoURL = `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`;
 
+        if (req.file?.path) {
+            const uploadedPhoto = await uploadOnCloudinary(req.file.path);
+            if (uploadedPhoto?.secure_url) {
+                profilePhotoURL = uploadedPhoto.secure_url;
+            }
+        }
 
-        console.log(`Generated OTP for ${contactNumber}: ${otp}`);
-
-        
-        
-
-        await client.messages.create({
-            from: process.env.TWILIO_PHONE_NUMBER,
-            to: contactNumber,
-            body: `Your OTP is ${otp}`,
+        // 7. Create user
+        const user = await User.create({
+            firstName,
+            lastName,
+            contactNumber,
+            accountType,
+            password: hashedPassword,
+            profilePhoto: profilePhotoURL,
         });
 
-        
-
-        return res.status(200).json({
-            message: "OTP sent successfully",
+        // 8. Success response
+        return res.status(201).json({
+            success: true,
+            message: "Signed up successfully",
+            user,
         });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Internal Server Error during signup" });
+
+    } catch (error) {
+        console.error("Signup Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
     }
 };
-
 
 
 const verifyOtp = async (req, res) => {
