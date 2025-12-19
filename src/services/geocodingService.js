@@ -5,7 +5,13 @@ async function getCoordinates(location) {
   const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json`;
 
   try {
-    const response = await axios.get(url);
+    axios.get(url, {
+  headers: {
+    "User-Agent": "FarmsApp/1.0 (contact: kalpesh@example.com)",
+    "Accept": "application/json"
+  }
+});
+
     if (response.data.length > 0) {
       const { lat, lon } = response.data[0];
       return { lat: parseFloat(lat), lon: parseFloat(lon) };
